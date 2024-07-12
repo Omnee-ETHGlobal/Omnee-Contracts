@@ -5,34 +5,26 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-contract BondingCurve is ReentrancyGuard {
+import "./interfaces/IBondingCurve.sol";
+
+contract BondingCurve is IBondingCurve, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
-    struct TokenInfo {
-        IERC20 token;
-        uint256 reserveBalance;
-        uint256 liquidity;
-    }
-    address public universalFactoryAddress;
+    address public override universalFactoryAddress;
 
-    address[] public tokenList;
+    address[] public override tokenList;
     mapping(address => TokenInfo) public supportedTokens;
 
     uint256 public constant INITIAL_SUPPLY = 100_000_000 * 1e18;
     uint256 public constant SLOPE = 0.001 * 1e18;
     uint256 public constant INITIAL_PRICE = 0.000000001 * 1e18;
 
-    event TokenAdded(address indexed tokenAddress);
-    event TokenBought(address indexed buyer, address indexed tokenAddress, uint256 amount, uint256 cost);
-    event TokenSold(address indexed seller, address indexed tokenAddress, uint256 amount, uint256 payout);
-
-    error TokenNotSupported(address tokenAddress);
-    error InsufficientLiquidity(uint256 requested, uint256 available);
-    error InvalidAmount(uint256 amount);
-    error TransferFailed(address token, address from, address to, uint256 amount);
-
     constructor(address _universalFactoryAddress) {
         universalFactoryAddress = _universalFactoryAddress;
+    }
+
+    function getTokenInfo(address tokenAddress) external view override returns (TokenInfo memory) {
+        return supportedTokens[tokenAddress];
     }
 
     function addToken(address _tokenAddress) external {
