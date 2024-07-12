@@ -27,8 +27,6 @@ contract OFTFactory is OAppReceiver {
         address, // Executor address as specified by the OApp.
         bytes calldata // Any extra data or options to trigger on receipt.
     ) internal override {
-        // TODO: receive the payload from the UniversalFactory and deploy the OmneeOFT 
-
         (string memory _name, 
         string memory _symbol, 
         uint32 _eid, 

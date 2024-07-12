@@ -4,17 +4,17 @@ import type { OAppOmniGraphHardhat, OmniPointHardhat } from '@layerzerolabs/tool
 
 const baseContract: OmniPointHardhat = {
     eid: EndpointId.BASESEP_V2_TESTNET,
-    contractName: 'MyOApp',
+    contractName: 'UniversalFactory',
 }
 
 const scrollContract: OmniPointHardhat = {
     eid: EndpointId.SCROLL_V2_TESTNET,
-    contractName: 'MyOApp',
+    contractName: 'OFTFactory',
 }
 
 const arbContract: OmniPointHardhat = {
     eid: EndpointId.ARBSEP_V2_TESTNET,
-    contractName: 'MyOApp',
+    contractName: 'OFTFactory',
 }
 
 const config: OAppOmniGraphHardhat = {
