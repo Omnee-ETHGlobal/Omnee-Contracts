@@ -3,7 +3,7 @@ pragma solidity ^0.8.22;
 
 import { OAppReceiver, Origin, OAppCore } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OAppReceiver.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { Create3 } from "./libs/Create3.sol";
+import { Create3 } from "./librairies/Create3.sol";
 import { OmneeOFT } from "./OmneeOFT.sol";
 
 contract OFTFactory is OAppReceiver {
@@ -27,11 +27,9 @@ contract OFTFactory is OAppReceiver {
         address, // Executor address as specified by the OApp.
         bytes calldata // Any extra data or options to trigger on receipt.
     ) internal override {
-        (string memory _name, 
-        string memory _symbol, 
-        uint32 _eid, 
-        uint256 _deployId, 
-        address _deployer) = abi.decode(payload, (string, string, uint32, uint256, address));
-
+        (string memory _name, string memory _symbol, uint32 _eid, uint256 _deployId, address _deployer) = abi.decode(
+            payload,
+            (string, string, uint32, uint256, address)
+        );
     }
 }
