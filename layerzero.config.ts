@@ -37,6 +37,22 @@ const config: OAppOmniGraphHardhat = {
         {
             from : baseContract,
             to : arbContract,
+        },
+        {
+            from : scrollContract,
+            to : arbContract,
+        },
+        {
+            from : arbContract,
+            to : scrollContract,
+        },
+        {
+            from : arbContract,
+            to : baseContract,
+        }, 
+        {
+            from : scrollContract,
+            to : baseContract,
         }
     ],
 }
