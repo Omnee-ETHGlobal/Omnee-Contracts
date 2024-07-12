@@ -52,19 +52,19 @@ const config: HardhatUserConfig = {
         ],
     },
     networks: {
-        sepolia: {
-            eid: EndpointId.SEPOLIA_V2_TESTNET,
-            url: process.env.RPC_URL_SEPOLIA || 'https://rpc.sepolia.org/',
+        baseSepolia: {
+            eid: EndpointId.BASESEP_V2_TESTNET,
+            url: "https://sepolia.base.org",
             accounts,
         },
-        fuji: {
-            eid: EndpointId.AVALANCHE_V2_TESTNET,
-            url: process.env.RPC_URL_FUJI || 'https://rpc.ankr.com/avalanche_fuji',
+        scrollSepolia: {
+            eid: EndpointId.SCROLL_V2_TESTNET,
+            url: "https://scroll-sepolia.drpc.org",
             accounts,
         },
-        amoy: {
-            eid: EndpointId.AMOY_V2_TESTNET,
-            url: process.env.RPC_URL_AMOY || 'https://polygon-amoy-bor-rpc.publicnode.com',
+        arbitrumSepolia: {
+            eid: EndpointId.ARBSEP_V2_TESTNET,
+            url: "https://sepolia-rollup.arbitrum.io/rpc",
             accounts,
         },
     },
