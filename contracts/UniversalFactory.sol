@@ -37,10 +37,12 @@ contract UniversalFactory is OAppSender {
             _lzSend(_eids[i], payload, _options, MessagingFee(msg.value, 0), msg.sender);
         }
 
-        /// @TODO Call BASE Factory to deploy the OFT on main chain
+        /// TODO: Call BASE Factory to deploy the OFT on main chain
 
         currentDeployId++;
 
+        /// TODO: Put token address instead of msg.sender
+        
         tokenByAddress[msg.sender] = TokenInfo(msg.sender, _name, _symbol, _eids, currentDeployId);
 
         emit OFTCreated(msg.sender, _name, _symbol, _eids, currentDeployId);
