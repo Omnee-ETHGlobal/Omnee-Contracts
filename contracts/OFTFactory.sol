@@ -7,8 +7,14 @@ import { Create3 } from "./librairies/Create3.sol";
 import { OmneeOFT } from "./OmneeOFT.sol";
 
 contract OFTFactory is OAppReceiver {
+
     uint32 public eid;
     bytes32 public universalFactory;
+    string public salt = "OMNEE_OFT";
+
+    mapping (uint256 => address) public deployIdToAddress;
+
+    event OFTCreated(address, string, string, uint32, uint256);
 
     constructor(
         address _endpoint,
@@ -22,14 +28,31 @@ contract OFTFactory is OAppReceiver {
 
     function _lzReceive(
         Origin calldata _origin,
-        bytes32 _guid,
+        bytes32,
         bytes calldata payload,
-        address, // Executor address as specified by the OApp.
+        address, 
         bytes calldata // Any extra data or options to trigger on receipt.
     ) internal override {
-        (string memory _name, string memory _symbol, uint32 _eid, uint256 _deployId, address _deployer) = abi.decode(
-            payload,
-            (string, string, uint32, uint256, address)
+
+        require (_origin.sender == universalFactory, "Unauthorized");
+
+        (string memory _name, 
+        string memory _symbol, 
+        uint32 _eid, 
+        uint256 _deployId, 
+        address _deployer) = abi.decode(payload, (string, string, uint32, uint256, address));
+
+        bytes memory bytecode = type(OmneeOFT).creationCode;
+        bytes32 _salt = keccak256(abi.encodePacked(salt, _deployId));
+
+        address oftAddr = Create3.create3(
+            _salt,
+            abi.encodePacked(bytecode, abi.encode(_symbol, _name, endpoint, _deployer, _eid))
         );
+
+        deployIdToAddress[_deployId] = oftAddr;
+
+        emit OFTCreated(oftAddr, _name, _symbol, _eid, _deployId);
+
     }
 }
