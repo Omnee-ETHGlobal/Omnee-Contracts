@@ -27,13 +27,12 @@ contract OmneeOFT is OFT {
         for (uint256 i = 0; i < REMOTE_EIDS.length; i++) {
             if (REMOTE_EIDS[i] != eid) {
                 _setPeer(REMOTE_EIDS[i], MsgUtils.addressToBytes32(address(this)));
-            }   
+            }
         }
         _mint(bondingCurve, 100_000_000 * 1e18);
     }
 
     function buyRemote(bytes memory _options) external payable {
-
         MsgUtils.BuyTokenMsg memory message = MsgUtils.BuyTokenMsg({
             buyer: msg.sender,
             tokenAddress: address(this),
@@ -70,9 +69,8 @@ contract OmneeOFT is OFT {
             BASE_EID,
             abi.encode(MsgUtils.createSellStdMessage(message)),
             _options,
-            MessagingFee(0, 0),
+            MessagingFee(msg.value, 0),
             payable(msg.sender)
         );
-    
     }
 }
