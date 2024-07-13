@@ -13,7 +13,7 @@ contract OFTFactory is OAppReceiver {
 
     mapping(uint256 => address) public deployIdToAddress;
 
-    event OFTCreated(address, string, string, uint32, uint256);
+    event OFTCreated(address indexed sender, string indexed name, string symbol, uint32 eid, uint256 deployId);
 
     constructor(
         address _endpoint,
