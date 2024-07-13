@@ -8,7 +8,7 @@ contract OmneeOFT is OFT {
 
     uint32 public eid;
     uint32 public base_eid = 40245;
-    uint32[] public remote_eids = [10231, 40170];
+    uint32[] public remote_eids = [40231, 40170];
 
     constructor(
         string memory _symbol,
@@ -17,12 +17,11 @@ contract OmneeOFT is OFT {
         address _delegate,
         uint32 _eid
     ) OFT(_name, _symbol, _lzEndpoint, _delegate) Ownable(_delegate) {
+        
         eid = _eid;
 
         for (uint256 i = 0; i < remote_eids.length; i++) {
-
             _setPeer(remote_eids[i], bytes32(uint256(uint160(address(this)))));
-            
         }
     }
 

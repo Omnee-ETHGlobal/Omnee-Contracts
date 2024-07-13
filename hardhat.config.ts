@@ -59,7 +59,7 @@ const config: HardhatUserConfig = {
         },
         scrollSepolia: {
             eid: EndpointId.SCROLL_V2_TESTNET,
-            url: "https://scroll-sepolia.drpc.org",
+            url: "https://sepolia-rpc.scroll.io",
             accounts,
         },
         arbitrumSepolia: {

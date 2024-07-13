@@ -1,0 +1,3 @@
+UniversalFactory deployed to: 0xfB9cDefA6Db1990dbC01225311f4f8A980EbDCEB [BASE]
+OFTFactory deployed to: 0x2d2dffeD3Ca547739EE4f835ee8674DE408b9598 [SCROLL]
+OFTFactory deployed to: 0x2d2dffeD3Ca547739EE4f835ee8674DE408b9598 [ARB]
