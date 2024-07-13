@@ -67,6 +67,11 @@ const config: HardhatUserConfig = {
             url: "https://sepolia-rollup.arbitrum.io/rpc",
             accounts,
         },
+        optimismSepolia: {
+            eid: EndpointId.OPTSEP_V2_TESTNET,
+            url: "https://sepolia.optimism.io",
+            accounts,
+        },
     },
     namedAccounts: {
         deployer: {
