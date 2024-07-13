@@ -13,7 +13,7 @@ contract OmneeOFT is OFT {
     address public bondingCurve = address(0);
 
     uint32 public BASE_EID = 40245;
-    uint32[] public REMOTE_EIDS = [40231, 40170];
+    uint32[] public REMOTE_EIDS = [40231, 40170, 40232];
 
     constructor(
         string memory _symbol,
@@ -25,30 +25,54 @@ contract OmneeOFT is OFT {
         eid = _eid;
 
         for (uint256 i = 0; i < REMOTE_EIDS.length; i++) {
-            _setPeer(REMOTE_EIDS[i], MsgUtils.addressToBytes32(address(this)));
+            if (REMOTE_EIDS[i] != eid) {
+                _setPeer(REMOTE_EIDS[i], MsgUtils.addressToBytes32(address(this)));
+            }   
         }
+        _mint(bondingCurve, 100_000_000 * 1e18);
     }
 
-    function buyRemote(uint256 _amount) external payable {
+    function buyRemote(bytes memory _options) external payable {
+
         MsgUtils.BuyTokenMsg memory message = MsgUtils.BuyTokenMsg({
             buyer: msg.sender,
             tokenAddress: address(this),
-            amount: _amount
+            amount: msg.value
         });
 
-        bytes memory options = OptionsBuilder.newOptions().addExecutorNativeDropOption(
-            msg.value,
-            MsgUtils.addressToBytes32(bondingCurve)
-        );
+        MessagingFee memory fee = _quote(BASE_EID, abi.encode(MsgUtils.createBuyStdMessage(message)), _options, false);
+
+        require(msg.value >= fee.nativeFee, "Insufficient fee provided");
 
         MessagingReceipt memory receipt = _lzSend(
             BASE_EID,
-            MsgUtils.createBuyStdMessage(message),
-            options,
+            abi.encode(MsgUtils.createBuyStdMessage(message)),
+            _options,
             MessagingFee(msg.value, 0),
             payable(msg.sender)
         );
     }
 
-    function sellRemote() external {}
+    function sellRemote(uint256 _amount, bytes memory _options) external payable {
+        MsgUtils.SellTokenMsg memory message = MsgUtils.SellTokenMsg({
+            seller: msg.sender,
+            tokenAddress: address(this),
+            amount: _amount
+        });
+
+        MessagingFee memory fee = _quote(BASE_EID, abi.encode(MsgUtils.createSellStdMessage(message)), _options, false);
+
+        require(fee.nativeFee <= msg.value, "Insufficient fee provided");
+
+        (uint256 amountSentLD, uint256 amountReceivedLD) = _debit(msg.sender, _amount, _amount, BASE_EID);
+
+        MessagingReceipt memory receipt = _lzSend(
+            BASE_EID,
+            abi.encode(MsgUtils.createSellStdMessage(message)),
+            _options,
+            MessagingFee(0, 0),
+            payable(msg.sender)
+        );
+    
+    }
 }

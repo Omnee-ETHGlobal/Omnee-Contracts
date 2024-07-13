@@ -3,6 +3,7 @@ pragma solidity ^0.8.22;
 
 import { OAppSender, OAppCore, MessagingFee, MessagingReceipt } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OAppSender.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { IOFTFactory } from "./interfaces/IOFTFactory.sol";
 
 contract UniversalFactory is OAppSender {
 
@@ -14,7 +15,9 @@ contract UniversalFactory is OAppSender {
         uint256 deployId;
     }
 
+
     uint256 public currentDeployId = 1;
+    address public baseFactory;
 
     mapping(address => TokenInfo) public tokenByAddress;
 
@@ -57,20 +60,18 @@ contract UniversalFactory is OAppSender {
             _lzSend(_eids[i], payload, _options, fee, payable(msg.sender));
         }
 
-        /// TODO: Call BASE Factory to deploy the OFT on main chain
+        address oftAddr = IOFTFactory(baseFactory).deployOFTBase(_name, _symbol, currentDeployId, msg.sender);
 
         currentDeployId++;
 
-        /// TODO: Put token address instead of msg.sender
-
-        tokenByAddress[msg.sender] = TokenInfo(msg.sender, _name, _symbol, _eids, currentDeployId);
+        tokenByAddress[oftAddr] = TokenInfo(msg.sender, _name, _symbol, _eids, currentDeployId);
 
         emit OFTCreated(msg.sender, _name, _symbol, _eids, currentDeployId);
     }
 
     function quoteDeployOFT(string memory _name, string memory _symbol, uint32[] memory _eids, bytes memory _options) public view returns (uint256) {
 
-        uint256 nativeFee = 0;
+        uint256 totalNativeFee = 0;
 
         for (uint256 i = 0; i < _eids.length; i++) {
             _getPeerOrRevert(_eids[i]);
@@ -79,8 +80,12 @@ contract UniversalFactory is OAppSender {
 
             MessagingFee memory fee = _quote(_eids[i], payload, _options, false);
 
-            nativeFee += fee.nativeFee;
+            totalNativeFee += fee.nativeFee;
         }
-        return nativeFee;
+        return totalNativeFee;
+    }
+
+    function setBaseFactory(address _baseFactory) external onlyOwner {
+        baseFactory = _baseFactory;
     }
 }

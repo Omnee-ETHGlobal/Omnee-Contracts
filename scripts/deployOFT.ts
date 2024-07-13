@@ -53,15 +53,17 @@ const main = async () => {
 
     */
 
-    const options = Options.newOptions().addExecutorLzReceiveOption(400000000, 0).toHex().toString();
+    const options = Options.newOptions().addExecutorLzReceiveOption(1000000, 0).toHex().toString();
 
-    const nativeFee = await universalFactorySC.quoteDeployOFT("MEOW", "MEOW", [EID_ARB, EID_OP], options);
+    console.log("Options =>", options);
 
-    console.log("Deployment Fee =>", ethers.utils.formatEther(nativeFee.toString()), "ETH");
+   /// const nativeFee = await universalFactorySC.quoteDeployOFT("MEOW", "MEOW", [EID_ARB], options);
 
-    let tx = await universalFactorySC.deployOFT("MEOW", "MEOW", [EID_ARB, EID_OP], options, { value: nativeFee });
+   /// console.log("Deployment Fee =>", ethers.utils.formatEther(nativeFee.toString()), "ETH");
 
-    console.log("Transaction Hash =>", tx.hash);
+   /// let tx = await universalFactorySC.deployOFT("MEOW", "MEOW", [EID_ARB, EID_OP], options, { value: nativeFee });
+
+   ///  console.log("Transaction Hash =>", tx.hash);
 }
 
 main();
