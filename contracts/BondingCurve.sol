@@ -4,14 +4,13 @@ pragma solidity ^0.8.22;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/interfaces/IOFT.sol";
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { OApp, MessagingFee, Origin } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OApp.sol";
 import { MessagingReceipt } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OAppSender.sol";
+import { IOFT, SendParam } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/interfaces/IOFT.sol";
+import { OApp, MessagingFee, Origin } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OApp.sol";
 
 import "./librairies/MsgUtils.sol";
-import "./interfaces/IBondingCurve.sol";
 
 contract BondingCurve is ReentrancyGuard, Ownable, OApp {
     using SafeERC20 for IERC20;
@@ -70,7 +69,7 @@ contract BondingCurve is ReentrancyGuard, Ownable, OApp {
         emit TokenAdded(_tokenAddress);
     }
 
-    function buyTokens(address _tokenAddress) external payable nonReentrant {
+    function buyTokens(address _tokenAddress, address _to, uint32 _dstEid) external payable nonReentrant {
         TokenInfo storage tokenInfo = supportedTokens[_tokenAddress];
         if (!tokenInfo.exists) revert TokenNotSupported(_tokenAddress);
 
@@ -80,8 +79,16 @@ contract BondingCurve is ReentrancyGuard, Ownable, OApp {
         tokenInfo.reserveBalance -= buyableAmount;
         tokenInfo.liquidity += msg.value;
 
-        IERC20 token = IERC20(_tokenAddress);
-        token.safeTransfer(msg.sender, buyableAmount);
+        IOFT oft = IOFT(_tokenAddress);
+        SendParam memory sendParam = SendParam({
+            dstEid: _dstEid,
+            to: MsgUtils.addressToBytes32(_to),
+            amountLD: buyableAmount,
+            minAmountLD: buyableAmount,
+            extraOptions: "",
+            composeMsg: "",
+            oftCmd: ""
+        });
 
         emit TokenBought(msg.sender, _tokenAddress, buyableAmount);
     }
@@ -114,20 +121,19 @@ contract BondingCurve is ReentrancyGuard, Ownable, OApp {
         return _amount * INITIAL_PRICE;
     }
 
-    function _lzReceive(
+    function lzReceive(
         Origin calldata _origin,
         bytes32 _guid,
         bytes calldata _message,
-        address,
+        address _executor,
         bytes calldata _extraData
-    ) internal override {
+    ) public payable override {
         address senderAddress = address(uint160(uint256(bytes32(_origin.sender))));
 
         MsgUtils.StdMsg memory message = abi.decode(_message, (MsgUtils.StdMsg));
 
         if (message.messageType == MsgCodecs.MSG_BUY_REMOTE) {
             MsgUtils.BuyTokenMsg memory buyMessage = abi.decode(message.encodedContent, (MsgUtils.BuyTokenMsg));
-            // TODO: Receive ETH in SC
             // TODO: Buy tokens in bonding curve
         } else if (message.messageType == MsgCodecs.MSG_SELL_REMOTE) {
             MsgUtils.SellTokenMsg memory sellMessage = abi.decode(message.encodedContent, (MsgUtils.SellTokenMsg));
@@ -137,6 +143,14 @@ contract BondingCurve is ReentrancyGuard, Ownable, OApp {
             revert InvalidMessageType(message.messageType);
         }
     }
+
+    function _lzReceive(
+        Origin calldata _origin,
+        bytes32 _guid,
+        bytes calldata _message,
+        address _executor,
+        bytes calldata _extraData
+    ) internal virtual override {}
 
     fallback() external payable {}
     receive() external payable {}
