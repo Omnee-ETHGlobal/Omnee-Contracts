@@ -10,19 +10,36 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { OApp, MessagingFee, Origin } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OApp.sol";
 import { MessagingReceipt } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OAppSender.sol";
 
-import "./interfaces/IBondingCurve.sol";
 import "./librairies/MsgUtils.sol";
+import "./interfaces/IBondingCurve.sol";
 
-contract BondingCurve is IBondingCurve, ReentrancyGuard, OApp {
+contract BondingCurve is ReentrancyGuard, Ownable, OApp {
     using SafeERC20 for IERC20;
 
-    address public override universalFactoryAddress;
+    struct TokenInfo {
+        uint256 reserveBalance;
+        uint256 liquidity;
+        bool exists;
+    }
 
-    address[] public override tokenList;
+    event TokenAdded(address indexed tokenAddress);
+    event TokenBought(address indexed buyer, address indexed tokenAddress, uint256 amount);
+    event TokenSold(address indexed seller, address indexed tokenAddress, uint256 amount, uint256 payout);
+
+    error TokenNotSupported(address tokenAddress);
+    error InsufficientBalance(address tokenAddress);
+    error InsufficientLiquidity(uint256 requested, uint256 available);
+    error InvalidAmount(uint256 amount);
+    error TransferFailed(address token, address from, address to, uint256 amount);
+    error InvalidMessageType(uint8 messageType);
+
+    address public universalFactoryAddress;
+
+    address[] public tokenList;
     mapping(address => TokenInfo) public supportedTokens;
 
     uint256 public constant INITIAL_SUPPLY = 100_000_000 * 1e18;
-    uint256 public constant SLOPE = 0.001 * 1e18;
+    // uint256 public constant SLOPE = 0.001 * 1e18;
     uint256 public constant INITIAL_PRICE = 0.000000001 * 1e18;
 
     constructor(
@@ -33,7 +50,7 @@ contract BondingCurve is IBondingCurve, ReentrancyGuard, OApp {
         universalFactoryAddress = _universalFactoryAddress;
     }
 
-    function getTokenInfo(address _tokenAddress) external view override returns (TokenInfo memory) {
+    function getTokenInfo(address _tokenAddress) external view returns (TokenInfo memory) {
         return supportedTokens[_tokenAddress];
     }
 
@@ -53,21 +70,20 @@ contract BondingCurve is IBondingCurve, ReentrancyGuard, OApp {
         emit TokenAdded(_tokenAddress);
     }
 
-    function buyTokens(address _tokenAddress, uint256 _amount) external payable nonReentrant {
-        if (_amount == 0) revert InvalidAmount(_amount);
+    function buyTokens(address _tokenAddress) external payable nonReentrant {
         TokenInfo storage tokenInfo = supportedTokens[_tokenAddress];
         if (!tokenInfo.exists) revert TokenNotSupported(_tokenAddress);
 
-        uint256 cost = calculatePurchaseCost(_tokenAddress, _amount);
-        if (msg.value < cost) revert InsufficientLiquidity(cost, msg.value);
+        uint256 buyableAmount = calculateBuyableAmount(_tokenAddress, msg.value);
+        if (tokenInfo.reserveBalance < buyableAmount) revert InsufficientBalance(_tokenAddress);
 
-        tokenInfo.reserveBalance += _amount;
+        tokenInfo.reserveBalance -= buyableAmount;
         tokenInfo.liquidity += msg.value;
 
         IERC20 token = IERC20(_tokenAddress);
-        token.safeTransfer(msg.sender, _amount);
+        token.safeTransfer(msg.sender, buyableAmount);
 
-        emit TokenBought(msg.sender, _tokenAddress, _amount, cost);
+        emit TokenBought(msg.sender, _tokenAddress, buyableAmount);
     }
 
     function sellTokens(address _tokenAddress, uint256 _amount) external nonReentrant {
@@ -78,7 +94,7 @@ contract BondingCurve is IBondingCurve, ReentrancyGuard, OApp {
         uint256 payout = calculateSellPayout(_tokenAddress, _amount);
         if (address(this).balance < payout) revert InsufficientLiquidity(payout, address(this).balance);
 
-        tokenInfo.reserveBalance -= _amount;
+        tokenInfo.reserveBalance += _amount;
         tokenInfo.liquidity -= payout;
 
         IERC20 token = IERC20(_tokenAddress);
@@ -90,22 +106,13 @@ contract BondingCurve is IBondingCurve, ReentrancyGuard, OApp {
         emit TokenSold(msg.sender, _tokenAddress, _amount, payout);
     }
 
-    function calculatePurchaseCost(address _tokenAddress, uint256 amount) public view returns (uint256) {
-        TokenInfo memory tokenInfo = supportedTokens[_tokenAddress];
-        uint256 area = (tokenInfo.reserveBalance * SLOPE) / 1e18 + INITIAL_PRICE;
-        uint256 newArea = ((tokenInfo.reserveBalance + amount) * SLOPE) / 1e18 + INITIAL_PRICE;
-        return ((area + newArea) * amount) / 2;
+    function calculateBuyableAmount(address _tokenAddress, uint256 _amount) public pure returns (uint256) {
+        return _amount / INITIAL_PRICE;
     }
 
-    function calculateSellPayout(address _tokenAddress, uint256 amount) public view returns (uint256) {
-        TokenInfo memory tokenInfo = supportedTokens[_tokenAddress];
-        uint256 area = (tokenInfo.reserveBalance * SLOPE) / 1e18 + INITIAL_PRICE;
-        uint256 newArea = ((tokenInfo.reserveBalance - amount) * SLOPE) / 1e18 + INITIAL_PRICE;
-        return ((area + newArea) * amount) / 2;
+    function calculateSellPayout(address _tokenAddress, uint256 _amount) public pure returns (uint256) {
+        return _amount * INITIAL_PRICE;
     }
-
-    fallback() external payable {}
-    receive() external payable {}
 
     function _lzReceive(
         Origin calldata _origin,
@@ -130,4 +137,7 @@ contract BondingCurve is IBondingCurve, ReentrancyGuard, OApp {
             revert InvalidMessageType(message.messageType);
         }
     }
+
+    fallback() external payable {}
+    receive() external payable {}
 }
