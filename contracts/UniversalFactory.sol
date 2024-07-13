@@ -8,20 +8,19 @@ import { IOFTFactory } from "./interfaces/IOFTFactory.sol";
 contract UniversalFactory is OAppSender {
 
     struct TokenInfo {
+        address tokenAddr;
         address deployer;
         string name;
         string symbol;
         uint32[] eids;
-        uint256 deployId;
     }
-
 
     uint256 public currentDeployId = 1;
     address public baseFactory;
 
-    mapping(address => TokenInfo) public tokenByAddress;
+    mapping(uint256 => TokenInfo) public tokenByDeployId;
 
-    event OFTCreated(address, string, string, uint32[], uint256);
+    event OFTCreated(address tokenAddress, string name, string symbol, uint32[] eids, uint256 deployId);
 
     constructor(address _endpoint, address _owner) OAppCore(_endpoint, _owner) Ownable(_owner) {}
 
@@ -62,11 +61,11 @@ contract UniversalFactory is OAppSender {
 
         address oftAddr = IOFTFactory(baseFactory).deployOFTBase(_name, _symbol, currentDeployId, msg.sender);
 
+        tokenByDeployId[currentDeployId] = TokenInfo(oftAddr, msg.sender, _name, _symbol, _eids);
+
         currentDeployId++;
 
-        tokenByAddress[oftAddr] = TokenInfo(msg.sender, _name, _symbol, _eids, currentDeployId);
-
-        emit OFTCreated(msg.sender, _name, _symbol, _eids, currentDeployId);
+        emit OFTCreated(oftAddr, _name, _symbol, _eids, currentDeployId);
     }
 
     function quoteDeployOFT(string memory _name, string memory _symbol, uint32[] memory _eids, bytes memory _options) public view returns (uint256) {
@@ -87,5 +86,9 @@ contract UniversalFactory is OAppSender {
 
     function setBaseFactory(address _baseFactory) external onlyOwner {
         baseFactory = _baseFactory;
+    }
+
+    function getTokensAddressByDeployId(uint256 _deployId) external view returns (address) {
+        return tokenByDeployId[_deployId].tokenAddr;
     }
 }

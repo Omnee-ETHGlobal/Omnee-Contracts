@@ -15,10 +15,14 @@ import { MessagingFee, MessagingReceipt, Origin } from "@layerzerolabs/lz-evm-oa
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
+import { IOmneeOFT } from "../../contracts/interfaces/IOmneeOFT.sol";
+
 // Forge imports
 import "forge-std/console.sol";
 import { Vm } from "forge-std/Test.sol";
 import "forge-std/Test.sol";
+
+import "forge-std/console.sol";
 
 // DevTools imports
 import { TestHelperOz5 } from "@layerzerolabs/test-devtools-evm-foundry/contracts/TestHelperOz5.sol";
@@ -35,6 +39,7 @@ contract UniversalFactoryTest is TestHelperOz5 {
         
     UniversalFactory aSender;
 
+    OFTFactory aReceiver;
     OFTFactory bReceiver;
     OFTFactory cReceiver;
     OFTFactory dReceiver;
@@ -59,6 +64,10 @@ contract UniversalFactoryTest is TestHelperOz5 {
             payable(_deployOApp(type(UniversalFactory).creationCode, abi.encode(address(endpoints[aEid]), address(this))))
         );
 
+        aReceiver = OFTFactory(
+            payable(_deployOApp(type(OFTFactory).creationCode, abi.encode(address(endpoints[aEid]), address(this), 1, bytes32(uint256(uint160(address(aSender)))))))
+        );
+
         bReceiver = OFTFactory(
             payable(_deployOApp(type(OFTFactory).creationCode, abi.encode(address(endpoints[bEid]), address(this), 2, bytes32(uint256(uint160(address(aSender)))))))
         );
@@ -71,6 +80,8 @@ contract UniversalFactoryTest is TestHelperOz5 {
             payable(_deployOApp(type(OFTFactory).creationCode, abi.encode(address(endpoints[dEid]), address(this), 4, bytes32(uint256(uint160(address(aSender)))))))
         );
 
+        aSender.setBaseFactory(address(aReceiver));
+
         // config and wire the
         address[] memory oapps = new address[](4);
         oapps[0] = address(aSender);
@@ -82,7 +93,7 @@ contract UniversalFactoryTest is TestHelperOz5 {
     
     function test_batch_send() public {
         
-        bytes memory _extraSendOptions = OptionsBuilder.newOptions().addExecutorLzReceiveOption(10000000, 0); // extra gas limit and msg.value to request for A -> B
+        bytes memory _extraSendOptions = OptionsBuilder.newOptions().addExecutorLzReceiveOption(20000000, 0); // extra gas limit and msg.value to request for A -> B
 
         uint32[] memory _dstEids = new uint32[](2);
         _dstEids[0] = bEid;
@@ -104,7 +115,6 @@ contract UniversalFactoryTest is TestHelperOz5 {
         verifyPackets(bEid, addressToBytes32(address(bReceiver)));
         verifyPackets(cEid, addressToBytes32(address(cReceiver)));
         verifyPackets(dEid, addressToBytes32(address(dReceiver)));
-
 
         ///assertEq(bReceiver.data(), "Chain A says hello!");
         ///assertEq(cReceiver.data(), "Chain A says hello!");

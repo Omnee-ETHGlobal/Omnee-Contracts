@@ -47,7 +47,7 @@ contract OmneeOFT is OFT {
 
         require(msg.value >= fee.nativeFee, "Insufficient fee provided");
 
-        MessagingReceipt memory receipt = _lzSend(
+        _lzSend(
             BASE_EID,
             abi.encode(MsgUtils.createBuyStdMessage(message)),
             _options,

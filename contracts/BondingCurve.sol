@@ -116,10 +116,10 @@ contract BondingCurve is ReentrancyGuard, Ownable, OApp {
 
     function _lzReceive(
         Origin calldata _origin,
-        bytes32 _guid,
+        bytes32,
         bytes calldata _message,
         address,
-        bytes calldata _extraData
+        bytes calldata
     ) internal override {
         address senderAddress = address(uint160(uint256(bytes32(_origin.sender))));
 
