@@ -4,16 +4,12 @@ pragma solidity ^0.8.22;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/interfaces/IOFT.sol";
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { OApp, MessagingFee, Origin } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OApp.sol";
-import { MessagingReceipt } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OAppSender.sol";
 
 import "./librairies/MsgUtils.sol";
-import "./interfaces/IBondingCurve.sol";
 
-contract BondingCurve is ReentrancyGuard, Ownable, OApp {
+contract BondingCurve is ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
 
     struct TokenInfo {
@@ -42,11 +38,7 @@ contract BondingCurve is ReentrancyGuard, Ownable, OApp {
     // uint256 public constant SLOPE = 0.001 * 1e18;
     uint256 public constant INITIAL_PRICE = 0.000000001 * 1e18;
 
-    constructor(
-        address _endpoint,
-        address _delegate,
-        address _universalFactoryAddress
-    ) OApp(_endpoint, _delegate) Ownable(_delegate) {
+    constructor(address _delegate, address _universalFactoryAddress) Ownable(_delegate) {
         universalFactoryAddress = _universalFactoryAddress;
     }
 
@@ -106,36 +98,20 @@ contract BondingCurve is ReentrancyGuard, Ownable, OApp {
         emit TokenSold(msg.sender, _tokenAddress, _amount, payout);
     }
 
-    function calculateBuyableAmount(address _tokenAddress, uint256 _amount) public pure returns (uint256) {
-        return _amount / INITIAL_PRICE;
+    function calculateBuyableAmount(address _tokenAddress, uint256 _ethAmount) public pure returns (uint256) {
+        return _ethAmount / INITIAL_PRICE; // TODO: Make this variable
     }
 
-    function calculateSellPayout(address _tokenAddress, uint256 _amount) public pure returns (uint256) {
-        return _amount * INITIAL_PRICE;
+    function calculateSellPayout(address _tokenAddress, uint256 _tokenAmount) public pure returns (uint256) {
+        return _tokenAmount * INITIAL_PRICE; // TODO: Make this variable
     }
+    
+    
+    function getTokenPrice(address _tokenAddress) public view returns (uint256) {
+        TokenInfo memory tokenInfo = supportedTokens[_tokenAddress];
+        if (!tokenInfo.exists) revert TokenNotSupported(_tokenAddress);
 
-    function _lzReceive(
-        Origin calldata _origin,
-        bytes32,
-        bytes calldata _message,
-        address,
-        bytes calldata
-    ) internal override {
-        address senderAddress = address(uint160(uint256(bytes32(_origin.sender))));
-
-        MsgUtils.StdMsg memory message = abi.decode(_message, (MsgUtils.StdMsg));
-
-        if (message.messageType == MsgCodecs.MSG_BUY_REMOTE) {
-            MsgUtils.BuyTokenMsg memory buyMessage = abi.decode(message.encodedContent, (MsgUtils.BuyTokenMsg));
-            // TODO: Receive ETH in SC
-            // TODO: Buy tokens in bonding curve
-        } else if (message.messageType == MsgCodecs.MSG_SELL_REMOTE) {
-            MsgUtils.SellTokenMsg memory sellMessage = abi.decode(message.encodedContent, (MsgUtils.SellTokenMsg));
-            // TODO: Sell tokens in bonding curve
-            // TODO: Transfer ETH back to user
-        } else {
-            revert InvalidMessageType(message.messageType);
-        }
+        return INITIAL_PRICE; // TODO: Make this variable
     }
 
     fallback() external payable {}
