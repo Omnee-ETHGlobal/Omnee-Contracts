@@ -16,7 +16,7 @@ contract UniversalFactory is OAppSender {
 
     uint256 public currentDeployId = 1;
 
-    mapping (address => TokenInfo) public tokenByAddress;
+    mapping(address => TokenInfo) public tokenByAddress;
 
     event OFTCreated(address, string, string, uint32[], uint256);
 
@@ -25,10 +25,10 @@ contract UniversalFactory is OAppSender {
     function deployOFT(
         string memory _name,
         string memory _symbol,
-        uint32[] memory _eids, 
+        uint32[] memory _eids,
         bytes memory _options
     ) external payable {
-
+        
         for (uint256 i = 0; i < _eids.length; i++) {
             _getPeerOrRevert(_eids[i]);
 
@@ -42,10 +42,22 @@ contract UniversalFactory is OAppSender {
         currentDeployId++;
 
         /// TODO: Put token address instead of msg.sender
-        
+
         tokenByAddress[msg.sender] = TokenInfo(msg.sender, _name, _symbol, _eids, currentDeployId);
 
         emit OFTCreated(msg.sender, _name, _symbol, _eids, currentDeployId);
-        
+    }
+
+    function quoteDeployOFT(string memory _name, string memory _symbol, uint32[] memory _eids, bytes memory _options) public view returns (uint256 nativeFee) {
+        for (uint i = 0; i < _eids.length; i++) {
+            _getPeerOrRevert(_eids[i]);
+
+            bytes memory data = abi.encode(_name, _symbol, _eids[i], currentDeployId, msg.sender);
+
+            MessagingFee memory fee = _quote(_eids[i], data, _options, false);
+
+            nativeFee += fee.nativeFee;
+        }
+        return nativeFee;
     }
 }
