@@ -108,7 +108,8 @@ contract BondingCurve is ReentrancyGuard, Ownable {
     function calculateSellPayout(address _tokenAddress, uint256 _tokenAmount) public pure returns (uint256) {
         return _tokenAmount * INITIAL_PRICE; // TODO: Make this variable
     }
-
+    
+    
     function getTokenPrice(address _tokenAddress) public view returns (uint256) {
         TokenInfo memory tokenInfo = supportedTokens[_tokenAddress];
         if (!tokenInfo.exists) revert TokenNotSupported(_tokenAddress);
