@@ -44,7 +44,11 @@ contract BondingCurve is OApp, ILayerZeroComposer, ReentrancyGuard, Ownable {
     // uint256 public constant SLOPE = 0.001 * 1e18;
     uint256 public constant INITIAL_PRICE = 0.000000001 * 1e18;
 
-    constructor(address _delegate, address _universalFactoryAddress) Ownable(_delegate) {
+    constructor(
+        address _endpoint,
+        address _delegate,
+        address _universalFactoryAddress
+    ) Ownable(_delegate) OApp(_endpoint, _delegate) {
         universalFactoryAddress = _universalFactoryAddress;
     }
 
