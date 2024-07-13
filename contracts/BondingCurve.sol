@@ -24,6 +24,7 @@ contract BondingCurve is ReentrancyGuard, Ownable {
 
     error TokenNotSupported(address tokenAddress);
     error InsufficientBalance(address tokenAddress);
+    error InsufficientUserBalance(address tokenAddress);
     error InsufficientLiquidity(uint256 requested, uint256 available);
     error InvalidAmount(uint256 amount);
     error TransferFailed(address token, address from, address to, uint256 amount);
@@ -83,13 +84,15 @@ contract BondingCurve is ReentrancyGuard, Ownable {
         TokenInfo storage tokenInfo = supportedTokens[_tokenAddress];
         if (!tokenInfo.exists) revert TokenNotSupported(_tokenAddress);
 
+        IERC20 token = IERC20(_tokenAddress);
+        if (token.balanceOf(msg.sender) < _amount) revert InsufficientUserBalance(_tokenAddress);
+
         uint256 payout = calculateSellPayout(_tokenAddress, _amount);
         if (address(this).balance < payout) revert InsufficientLiquidity(payout, address(this).balance);
 
         tokenInfo.reserveBalance += _amount;
         tokenInfo.liquidity -= payout;
 
-        IERC20 token = IERC20(_tokenAddress);
         token.safeTransferFrom(msg.sender, address(this), _amount);
 
         (bool success, ) = msg.sender.call{ value: payout }("");
