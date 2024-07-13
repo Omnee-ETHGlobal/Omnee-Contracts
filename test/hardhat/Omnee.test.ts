@@ -18,14 +18,15 @@ describe('Omnee Test', function () {
     let mockEndpointV2B: Contract
 
     let uf: Contract
-    let oftFactory : Contract
+    let oftFactory: Contract
+    let ofFactoryBASE: Contract
 
     // Before hook for setup that runs once before all tests in the block
     before(async function () {
         // Contract factory for our tested contract
         // We are using a derived contract that exposes a mint() function for testing purposes
-        UniversalFactory = await ethers.getContractFactory('UniversalFactory');
-        OFTFactory = await ethers.getContractFactory('OFTFactory');
+        UniversalFactory = await ethers.getContractFactory('UniversalFactory')
+        OFTFactory = await ethers.getContractFactory('OFTFactory')
 
         // Fetching the first three signers (accounts) from Hardhat's local Ethereum network
         const signers = await ethers.getSigners()
@@ -52,39 +53,49 @@ describe('Omnee Test', function () {
 
         /// DEPLOY UniversalFactory
 
-        uf = await UniversalFactory.deploy(mockEndpointV2A.address, ownerA.address);
-        oftFactory = await OFTFactory.deploy(mockEndpointV2B.address, ownerA.address, 2, ethers.utils.zeroPad(uf.address, 32)); /// side chain 
-        
+        uf = await UniversalFactory.deploy(mockEndpointV2A.address, ownerA.address)
+        oftFactory = await OFTFactory.deploy(
+            mockEndpointV2B.address,
+            ownerA.address,
+            2,
+            ethers.utils.zeroPad(uf.address, 32)
+        ) /// side chain
+        ofFactoryBASE = await OFTFactory.deploy(
+            mockEndpointV2A.address,
+            ownerA.address,
+            1,
+            ethers.utils.zeroPad(uf.address, 32)
+        ) /// main chain
+
         // Setting destination endpoints in the LZEndpoint mock for each MyOFT instance
-        await mockEndpointV2A.setDestLzEndpoint(oftFactory.address, mockEndpointV2B.address);
-        await mockEndpointV2B.setDestLzEndpoint(uf.address, mockEndpointV2A.address);
+        await mockEndpointV2A.setDestLzEndpoint(oftFactory.address, mockEndpointV2B.address)
+        await mockEndpointV2B.setDestLzEndpoint(uf.address, mockEndpointV2A.address)
 
         // Setting each MyOFT instance as a peer of the other in the mock LZEndpoint
-        await oftFactory.connect(ownerA).setPeer(eidA, ethers.utils.zeroPad(uf.address, 32));
-        await uf.connect(ownerA).setPeer(eidB, ethers.utils.zeroPad(oftFactory.address, 32));
+        await oftFactory.connect(ownerA).setPeer(eidA, ethers.utils.zeroPad(uf.address, 32))
+        await uf.connect(ownerA).setPeer(eidB, ethers.utils.zeroPad(oftFactory.address, 32))
 
-        console.log('UF address', uf.address);
-        console.log('OFTB address', oftFactory.address);
+        console.log('UF address', uf.address)
+        console.log('OFTB address', oftFactory.address)
 
-        console.log(await uf.peers(2));
-        console.log(await oftFactory.peers(1));
+        console.log(await uf.peers(2))
+        console.log(await oftFactory.peers(1))
 
-        console.log("🚀 Deployment Done 🚀");
+        await uf.setBaseFactory(ofFactoryBASE.address)
+
+        console.log('🚀 Deployment Done 🚀')
     })
 
-    
     it('Should deploy OFT from FACTORY', async function () {
-
-        console.log("\n------------------------------------\n");
+        console.log('\n------------------------------------\n')
 
         const options = Options.newOptions().addExecutorLzReceiveOption(5000000, 0).toHex().toString()
-        const nativeFee = await uf.quoteDeployOFT("MEOW", "MEOW", [2], options);
+        const nativeFee = await uf.quoteDeployOFT('MEOW', 'MEOW', [2], options)
 
-        console.log("Native Fee =>", nativeFee.toString());
+        console.log('Native Fee =>', nativeFee.toString())
 
-        await uf.deployOFT("MEOW", "MEOW", [2], options, {value : nativeFee});
-        
-        console.log("Deployed OFT => ",await oftFactory.deployIdToAddress(1))
+        await uf.deployOFT('MEOW', 'MEOW', [2], options, { value: nativeFee })
+
+        console.log('Deployed OFT => ', await oftFactory.deployIdToAddress(1))
     })
-       
 })
