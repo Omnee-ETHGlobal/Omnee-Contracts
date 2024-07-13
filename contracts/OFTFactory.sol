@@ -7,12 +7,11 @@ import { Create3 } from "./librairies/Create3.sol";
 import { OmneeOFT } from "./OmneeOFT.sol";
 
 contract OFTFactory is OAppReceiver {
-
     uint32 public eid;
     bytes32 public universalFactory;
     string public salt = "OMNEE_OFT";
 
-    mapping (uint256 => address) public deployIdToAddress;
+    mapping(uint256 => address) public deployIdToAddress;
 
     event OFTCreated(address, string, string, uint32, uint256);
 
@@ -30,17 +29,15 @@ contract OFTFactory is OAppReceiver {
         Origin calldata _origin,
         bytes32,
         bytes calldata payload,
-        address, 
+        address,
         bytes calldata // Any extra data or options to trigger on receipt.
     ) internal override {
+        require(_origin.sender == universalFactory, "Unauthorized");
 
-        require (_origin.sender == universalFactory, "Unauthorized");
-
-        (string memory _name, 
-        string memory _symbol, 
-        uint32 _eid, 
-        uint256 _deployId, 
-        address _deployer) = abi.decode(payload, (string, string, uint32, uint256, address));
+        (string memory _name, string memory _symbol, uint32 _eid, uint256 _deployId, address _deployer) = abi.decode(
+            payload,
+            (string, string, uint32, uint256, address)
+        );
 
         bytes memory bytecode = type(OmneeOFT).creationCode;
         bytes32 _salt = keccak256(abi.encodePacked(salt, _deployId));
@@ -53,6 +50,28 @@ contract OFTFactory is OAppReceiver {
         deployIdToAddress[_deployId] = oftAddr;
 
         emit OFTCreated(oftAddr, _name, _symbol, _eid, _deployId);
+    }
 
+    function deployOFTBase(
+        string memory _name,
+        string memory _symbol,
+        uint256 _deployId,
+        address admin
+    ) external returns (address) {
+        require(bytes32(uint256(uint160(msg.sender))) == universalFactory, "OFTFactory: FORBIDDEN");
+
+        uint32 baseEID = 40245;
+
+        bytes memory bytecode = type(OmneeOFT).creationCode;
+        bytes32 _salt = keccak256(abi.encodePacked(salt, _deployId));
+
+        address oftAddr = Create3.create3(
+            _salt,
+            abi.encodePacked(bytecode, abi.encode(_symbol, _name, endpoint, admin, baseEID))
+        );
+
+        emit OFTCreated(oftAddr, _name, _symbol, baseEID, _deployId);
+
+        return oftAddr;
     }
 }
