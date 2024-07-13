@@ -19,8 +19,7 @@ describe('Omnee Test', function () {
     let mockEndpointV2B: Contract
 
     let uf: Contract
-    let baseFactory : Contract
-    let oftFactoryB : Contract
+    let oftFactory : Contract
 
     // Before hook for setup that runs once before all tests in the block
     before(async function () {
@@ -55,80 +54,38 @@ describe('Omnee Test', function () {
         /// DEPLOY UniversalFactory
 
         uf = await UniversalFactory.deploy(mockEndpointV2A.address, ownerA.address);
-        baseFactory = await OFTFactory.deploy(mockEndpointV2A.address, ownerA.address, 1); /// main chain
-        oftFactoryB = await OFTFactory.deploy(mockEndpointV2B.address, ownerA.address, 2); /// side chain 
+        oftFactory = await OFTFactory.deploy(mockEndpointV2B.address, ownerA.address, 2, ethers.utils.zeroPad(uf.address, 32)); /// side chain 
         
         // Setting destination endpoints in the LZEndpoint mock for each MyOFT instance
-        await mockEndpointV2A.setDestLzEndpoint(oftFactoryB.address, mockEndpointV2B.address);
+        await mockEndpointV2A.setDestLzEndpoint(oftFactory.address, mockEndpointV2B.address);
         await mockEndpointV2B.setDestLzEndpoint(uf.address, mockEndpointV2A.address);
 
         // Setting each MyOFT instance as a peer of the other in the mock LZEndpoint
-        await oftFactoryB.connect(ownerA).setPeer(eidA, ethers.utils.zeroPad(uf.address, 32));
-        await uf.connect(ownerA).setPeer(eidB, ethers.utils.zeroPad(oftFactoryB.address, 32));
-
-        await uf.connect(ownerA).setBaseFactory(baseFactory.address);
-
-        console.log("Deployment Done");
+        await oftFactory.connect(ownerA).setPeer(eidA, ethers.utils.zeroPad(uf.address, 32));
+        await uf.connect(ownerA).setPeer(eidB, ethers.utils.zeroPad(oftFactory.address, 32));
 
         console.log('UF address', uf.address);
-        console.log('OFTA address', baseFactory.address);
-        console.log('OFTB address', oftFactoryB.address);
+        console.log('OFTB address', oftFactory.address);
+
+        console.log(await uf.peers(2));
+        console.log(await oftFactory.peers(1));
+
+        console.log("🚀 Deployment Done 🚀");
     })
 
     
-    it('Should deploy OFT token from Factory on each chain', async function () {
+    it('Should deploy OFT from FACTORY', async function () {
 
-        const options = Options.newOptions().addExecutorLzReceiveOption(200000, 0).toHex().toString()
-        const nativeFee = await uf.quoteDeployment(["Meow", "MM"], options);
+        console.log("\n------------------------------------\n");
 
-        await uf.deploy(["Meow", "MM"], options,{value : nativeFee.toString()});
-        console.log(await uf.OFTAddressById(1))
+        const options = Options.newOptions().addExecutorLzReceiveOption(5000000, 0).toHex().toString()
+        const nativeFee = await uf.quoteDeployOFT("MEOW", "MEOW", [2], options);
 
-        ///   await oftContract.send(sendParam, [nativeFee, 0], wallet.address, {value : nativeFee})
+        console.log("Native Fee =>", nativeFee.toString());
 
-        /// console.log("PEERS", await uf.peers(2))
-
-        ///    const oftAddress = await uf.OFTAddressById(1);
-
-        ///     expect(oftAddress).not.equal(0);
-
-        /* 
-        const initialAmount = ethers.utils.parseEther('100')
-        await myOFTA.mint(ownerA.address, initialAmount)
-
-        // Defining the amount of tokens to send and constructing the parameters for the send operation
-        const tokensToSend = ethers.utils.parseEther('1')
-
-        // Defining extra message execution options for the send operation
+        await uf.deployOFT("MEOW", "MEOW", [2], options, {value : nativeFee});
         
-
-        const sendParam = [
-            eidB,
-            ethers.utils.zeroPad(ownerB.address, 32),
-            tokensToSend,
-            tokensToSend,
-            options,
-            '0x',
-            '0x',
-        ]
-
-        console.log('sendParam', sendParam)
-
-        // Fetching the native fee for the token send operation
-        const [nativeFee] = await myOFTA.quoteSend(sendParam, false)
-
-        // Executing the send operation from myOFTA contract
-        await myOFTA.send(sendParam, [nativeFee, 0], ownerA.address, { value: nativeFee })
-
-        // Fetching the final token balances of ownerA and ownerB
-        const finalBalanceA = await myOFTA.balanceOf(ownerA.address)
-        const finalBalanceB = await myOFTB.balanceOf(ownerB.address)
-
-        // Asserting that the final balances are as expected after the send operation
-        expect(finalBalanceA).eql(initialAmount.sub(tokensToSend))
-        expect(finalBalanceB).eql(tokensToSend)
-
-        */
+        console.log("Deployed OFT => ",await oftFactory.deployIdToAddress(1))
     })
        
 })
