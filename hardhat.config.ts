@@ -75,10 +75,15 @@ const config: HardhatUserConfig = {
             url: 'https://sepolia.optimism.io',
             accounts,
         },
+        zircuitTestnet : {
+            eid : EndpointId.ZIRCUIT_V2_TESTNET,
+            url : 'https://zircuit1.p2pify.com/',
+            accounts,
+        }
     },
     etherscan: {
         apiKey: {
-            baseSepolia: 'mock', // not required by blockscout
+            baseSepolia: 'TT7ZRT8QYDAZBGZFVMU786TCJIKFF2JJHM', 
             arbitrumSepolia: 'mock', // not required by blockscout
             optimismSepolia: 'mock', // not required by blockscout
             scrollSepolia: SCROLL_API_KEY || '',

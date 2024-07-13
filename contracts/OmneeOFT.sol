@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.22;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
@@ -10,7 +10,7 @@ import "./librairies/MsgUtils.sol";
 
 contract OmneeOFT is OFT {
     uint32 public eid;
-    address public bondingCurve = address(0);
+    address public bondingCurve = 0x000000000000000000000000000000000000dEaD; 
 
     uint32 public BASE_EID = 40245;
     uint32[] public REMOTE_EIDS = [40231, 40170, 40232];
@@ -29,7 +29,10 @@ contract OmneeOFT is OFT {
                 _setPeer(REMOTE_EIDS[i], MsgUtils.addressToBytes32(address(this)));
             }
         }
-        _mint(bondingCurve, 100_000_000 * 1e18);
+        if (_eid == BASE_EID) {
+            _mint(bondingCurve, 100_000_000 * 1e18);
+        }
+        
     }
 
     function buyRemote(bytes memory _options) external payable {

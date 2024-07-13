@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 import { ethers } from "hardhat";
 
-const owner = "0x0666899825Ffe6C9afA2e0b3F08b2049DD8BdB1f";
+const owner = "0x5e7fDe833Ca77049f15E80e88ef744d9FE2e463b";
 
 const endpointV2_BASE = "0x6EDCE65403992e310A62460808c4b910D972f10f";
 const endpointV2_SCROLL = "0x6EDCE65403992e310A62460808c4b910D972f10f";
@@ -17,19 +17,16 @@ const EID_OP = "40232";
 const main = async () => {
 
 
-  /// const UniversalFactory = await ethers.getContractFactory("UniversalFactory");
-  /// const factory = await UniversalFactory.deploy(endpointV2_BASE, owner);
+  const UniversalFactory = await ethers.getContractFactory("UniversalFactory");
+  const factory = await UniversalFactory.deploy(endpointV2_BASE, owner);
 
-  /// console.log("UniversalFactory deployed to:", factory.address);
-
+  console.log("UniversalFactory deployed to:", factory.address);
 
   const OFTFactory = await ethers.getContractFactory("OFTFactory");
-  const oftFactory = await OFTFactory.deploy(endpointV2_SCROLL, owner, EID_SCROLL, ethers.utils.zeroPad("0x4948A0dF2255a245c2a027DF6723FA3B0693ccDC", 32));
+  const oftFactory = await OFTFactory.deploy(endpointV2_BASE, owner, EID_OP, ethers.utils.zeroPad("0xF803d75844195266E9a0Db97b17832Bb14F5Ca91", 32));
 
   console.log("OFTFactory deployed to:", oftFactory.address);
 
-
-  /// TODO: SET PEERS
 
 }
 
