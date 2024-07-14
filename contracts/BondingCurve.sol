@@ -27,6 +27,21 @@ contract BondingCurve is OApp, ILayerZeroComposer, ReentrancyGuard, Ownable {
     event TokenBought(address indexed buyer, address indexed tokenAddress, uint256 amount);
     event TokenSold(address indexed seller, address indexed tokenAddress, uint256 amount, uint256 payout);
 
+    event LzReceiveLog(
+        uint8 indexed msgType,
+        address indexed tokenAddress,
+        address indexed sender,
+        uint32 eid,
+        uint256 tokenAmount
+    );
+    event LzComposeLog(
+        uint8 indexed msgType,
+        address indexed tokenAddress,
+        address indexed sender,
+        uint32 eid,
+        uint256 tokenAmount
+    );
+
     error TokenNotSupported(address tokenAddress);
     error InsufficientBalance(address tokenAddress);
     error InsufficientUserBalance(address tokenAddress);
@@ -190,16 +205,18 @@ contract BondingCurve is OApp, ILayerZeroComposer, ReentrancyGuard, Ownable {
         address _executor,
         bytes calldata _extraData
     ) external payable override {
-        (uint8 msgType, address tokenAddress, address sender, uint32 eid, ) = abi.decode(
+        (uint8 msgType, address tokenAddress, address sender, uint32 eid, uint256 tokenAmount) = abi.decode(
             _message,
             (uint8, address, address, uint32, uint256)
         );
 
-        if (msgType == 1) {
-            _buyTokensRemote(tokenAddress, sender, msg.value, eid);
-        } else {
-            revert InvalidMessageType(msgType);
-        }
+        emit LzReceiveLog(msgType, tokenAddress, sender, eid, tokenAmount);
+
+        // if (msgType == 1) {
+        //     _buyTokensRemote(tokenAddress, sender, msg.value, eid);
+        // } else {
+        //     revert InvalidMessageType(msgType);
+        // }
     }
 
     function lzCompose(address, bytes32, bytes calldata _message, address, bytes calldata) external payable override {
@@ -208,11 +225,13 @@ contract BondingCurve is OApp, ILayerZeroComposer, ReentrancyGuard, Ownable {
             (uint8, address, address, uint32, uint256)
         );
 
-        if (msgType == 2) {
-            _sellTokensRemote(tokenAddress, sender, tokenAmount, eid);
-        } else {
-            revert InvalidMessageType(msgType);
-        }
+        emit LzComposeLog(msgType, tokenAddress, sender, eid, tokenAmount);
+
+        // if (msgType == 2) {
+        //     _sellTokensRemote(tokenAddress, sender, tokenAmount, eid);
+        // } else {
+        //     revert InvalidMessageType(msgType);
+        // }
     }
 
     fallback() external payable {}
