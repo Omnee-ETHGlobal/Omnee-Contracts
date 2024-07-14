@@ -17,6 +17,11 @@ const arbContract: OmniPointHardhat = {
     contractName: 'OFTFactory',
 }
 
+const opContract: OmniPointHardhat = {
+    eid: EndpointId.OPTSEP_V2_TESTNET,
+    contractName: 'OFTFactory',
+}
+
 const config: OAppOmniGraphHardhat = {
     contracts: [
         {
@@ -28,6 +33,9 @@ const config: OAppOmniGraphHardhat = {
         {
             contract: arbContract,
         },
+        {
+            contract: opContract,
+        },
     ],
     connections: [
         {
@@ -37,6 +45,10 @@ const config: OAppOmniGraphHardhat = {
         {
             from : baseContract,
             to : arbContract,
+        },
+        {
+            from : baseContract,
+            to : opContract,
         },
         {
             from : scrollContract,
@@ -53,7 +65,28 @@ const config: OAppOmniGraphHardhat = {
         {
             from : scrollContract,
             to : baseContract,
+        },
+        {
+            from : opContract,
+            to : baseContract,
+        },
+        {
+            from : opContract,
+            to : scrollContract,
+        },
+        {
+            from : opContract,
+            to : arbContract,
+        },
+        {
+            from : scrollContract,
+            to : opContract,
+        },
+        {
+            from : arbContract,
+            to : opContract,
         }
+        
     ],
 }
 
