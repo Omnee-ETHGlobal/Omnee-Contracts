@@ -35,11 +35,13 @@ const main = async () => {
   const routerARB = new ethers.Contract("", omneeRouterABI, walletARB);
   const routerOP = new ethers.Contract("", omneeRouterABI, walletOP);
   const routerScroll = new ethers.Contract("", omneeRouterABI, walletSCROLL);
+  const routerZircuit = new ethers.Contract("", omneeRouterABI, walletZIRCUIT);
 
   const EID_BASE = "40245";
   const EID_SCROLL = "40170";
   const EID_ARB = "40231";
   const EID_OP = "40232";
+  const EID_ZIRCUIT = "40275";
 
   let txx = await universalFactorySC.setBaseFactory(oftFactoryBASE.address);
   await txx.wait();
@@ -62,6 +64,9 @@ const main = async () => {
   txx = await oftFactorySCROLL.setBondingCurve(bondingCurveBASE.address);
   await txx.wait();
 
+  txx = await oftFactoryZIRCUIT.setBondingCurve(bondingCurveBASE.address);
+  await txx.wait();
+
   txx = await routerARB.setBondingCurve(ethers.utils.zeroPad(bondingCurveBASE.address, 32));
   await txx.wait();
 
@@ -69,6 +74,9 @@ const main = async () => {
   await txx.wait();
 
   txx = await routerScroll.setBondingCurve(ethers.utils.zeroPad(bondingCurveBASE.address, 32));
+  await txx.wait();
+
+  txx = await routerZircuit.setBondingCurve(ethers.utils.zeroPad(bondingCurveBASE.address, 32));
   await txx.wait();
 
   console.log("Contracts set up");
@@ -82,6 +90,9 @@ const main = async () => {
   txx = await universalFactorySC.setPeer(EID_SCROLL, ethers.utils.zeroPad(oftFactorySCROLL.address, 32));
   await txx.wait();
 
+  txx = await universalFactorySC.setPeer(EID_ZIRCUIT, ethers.utils.zeroPad(oftFactoryZIRCUIT.address, 32));
+  await txx.wait();
+
   txx = await oftFactoryARB.setPeer(EID_BASE, ethers.utils.zeroPad(universalFactorySC.address, 32));
   await txx.wait();
 
@@ -89,6 +100,9 @@ const main = async () => {
   await txx.wait();
 
   txx = await oftFactorySCROLL.setPeer(EID_BASE, ethers.utils.zeroPad(universalFactorySC.address, 32));
+  await txx.wait();
+
+  txx = await oftFactoryZIRCUIT.setPeer(EID_BASE, ethers.utils.zeroPad(universalFactorySC.address, 32));
   await txx.wait();
 
   console.log("Main Peers set");
@@ -102,6 +116,9 @@ const main = async () => {
   txx = await routerScroll.setPeer(EID_BASE, ethers.utils.zeroPad(bondingCurveBASE.address, 32));
   await txx.wait();
 
+  txx = await routerZircuit.setPeer(EID_BASE, ethers.utils.zeroPad(bondingCurveBASE.address, 32));
+  await txx.wait();
+
   txx = await bondingCurveBASE.setPeer(EID_ARB, ethers.utils.zeroPad(routerARB.address, 32));
   await txx.wait();
 
@@ -111,13 +128,10 @@ const main = async () => {
   txx = await bondingCurveBASE.setPeer(EID_SCROLL, ethers.utils.zeroPad(routerScroll.address, 32));
   await txx.wait();
 
+  txx = await bondingCurveBASE.setPeer(EID_ZIRCUIT, ethers.utils.zeroPad(routerZircuit.address, 32));
+  await txx.wait();
+
   console.log("Router Peers set");
-
-
-
-
-
-
 
 
   /*
