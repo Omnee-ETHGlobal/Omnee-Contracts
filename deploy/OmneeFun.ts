@@ -1,11 +1,11 @@
 import assert from 'assert'
-import { ethers } from 'hardhat';
 
+import { ethers } from 'hardhat'
 import { type DeployFunction } from 'hardhat-deploy/types'
 
-const uf = 'UniversalFactory';
-const oftFactoryScroll = "OFTFactory";
-const oftFactoryArb = "OFTFactory";
+const uf = 'UniversalFactory'
+const oftFactoryScroll = 'OFTFactory'
+const oftFactoryArb = 'OFTFactory'
 
 const deploy: DeployFunction = async (hre) => {
     const { getNamedAccounts, deployments } = hre
@@ -20,40 +20,29 @@ const deploy: DeployFunction = async (hre) => {
 
     const endpointV2Deployment = await hre.deployments.get('EndpointV2')
 
-    let { address : ufAddress } = await deploy(uf, {
+    const { address: ufAddress } = await deploy(uf, {
         from: deployer,
-        args: [
-            endpointV2Deployment.address,
-            deployer
-        ],
+        args: [endpointV2Deployment.address, deployer],
         log: true,
         skipIfAlreadyDeployed: false,
     })
 
     console.log(`Deployed contract: ${uf}, network: ${hre.network.name}, address: ${ufAddress}`)
 
-    let { address: oftFactoryScrollAddress } = await deploy(oftFactoryScroll, {
+    const { address: oftFactoryScrollAddress } = await deploy(oftFactoryScroll, {
         from: deployer,
-        args: [
-            endpointV2Deployment.address,
-            deployer,
-            40170,
-            ethers.utils.zeroPad(ufAddress, 32)
-        ],
+        args: [endpointV2Deployment.address, deployer, 40170, ethers.utils.zeroPad(ufAddress, 32)],
         log: true,
         skipIfAlreadyDeployed: false,
     })
 
-    console.log(`Deployed contract: ${oftFactoryScroll}, network: ${hre.network.name}, address: ${oftFactoryScrollAddress}`)
+    console.log(
+        `Deployed contract: ${oftFactoryScroll}, network: ${hre.network.name}, address: ${oftFactoryScrollAddress}`
+    )
 
-    let { address: oftFactoryArbAddress } = await deploy(oftFactoryArb, {
+    const { address: oftFactoryArbAddress } = await deploy(oftFactoryArb, {
         from: deployer,
-        args: [
-            endpointV2Deployment.address,
-            deployer,
-            40231,
-            ethers.utils.zeroPad(ufAddress, 32)
-        ],
+        args: [endpointV2Deployment.address, deployer, 40231, ethers.utils.zeroPad(ufAddress, 32)],
         log: true,
         skipIfAlreadyDeployed: false,
     })
