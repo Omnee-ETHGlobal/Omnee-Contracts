@@ -122,8 +122,8 @@ contract BondingCurve is OApp, ILayerZeroComposer, ReentrancyGuard {
         SendParam memory quoteSendParam = SendParam({
             dstEid: _eid,
             to: MsgUtils.addressToBytes32(_buyer),
-            amountLD: 1, // We don't know yet
-            minAmountLD: 1, // We don't know yet
+            amountLD: 0, // We don't know yet
+            minAmountLD: 0, // We don't know yet
             extraOptions: extraOptions,
             composeMsg: bytes(""),
             oftCmd: bytes("")
@@ -132,7 +132,6 @@ contract BondingCurve is OApp, ILayerZeroComposer, ReentrancyGuard {
         // Estimate fees to send OFTs back to the buyer
         MessagingFee memory fee = oft.quoteSend(quoteSendParam, false);
 
-        /*
         require(_ethAmount >= fee.nativeFee, "Insufficient fee provided");
 
         // Calculate the amount of tokens the buyer can buy after fees
@@ -148,11 +147,9 @@ contract BondingCurve is OApp, ILayerZeroComposer, ReentrancyGuard {
         quoteSendParam.amountLD = buyableAmount;
         quoteSendParam.minAmountLD = buyableAmount;
 
-        */
-
         IOFT(_tokenAddress).send(quoteSendParam, MessagingFee(fee.nativeFee, 0), payable(this));
 
-        /// emit TokenBought(_buyer, _tokenAddress, buyableAmount);
+        emit TokenBought(_buyer, _tokenAddress, buyableAmount);
     }
 
     function _sellTokensRemote(address _tokenAddress, address _buyer, uint256 _tokenAmount, uint32 _eid) private {
@@ -176,7 +173,7 @@ contract BondingCurve is OApp, ILayerZeroComposer, ReentrancyGuard {
         tokenInfo.reserveBalance += _tokenAmount;
         tokenInfo.liquidity -= payout;
 
-        _lzSend(_eid, bytes(""), extraOptions, MessagingFee(payout, 0), payable(this)); // TODO: rf user? contract?
+        _lzSend(_eid, bytes(""), extraOptions, MessagingFee(payout, 0), payable(this));
 
         emit TokenSold(_buyer, _tokenAddress, _tokenAmount, payout);
     }
