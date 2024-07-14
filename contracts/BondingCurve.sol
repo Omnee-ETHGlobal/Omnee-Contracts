@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.22;
 
-
-
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -18,12 +16,6 @@ import "./librairies/MsgUtils.sol";
 contract BondingCurve is OApp, ILayerZeroComposer, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using OptionsBuilder for bytes;
-
-    struct TokenInfo {
-        uint256 reserveBalance;
-        uint256 liquidity;
-        bool exists;
-    }
 
     event TokenAdded(address indexed tokenAddress);
     event TokenBought(address indexed buyer, address indexed tokenAddress, uint256 amount);
@@ -54,6 +46,12 @@ contract BondingCurve is OApp, ILayerZeroComposer, ReentrancyGuard {
 
     address public universalFactoryAddress;
 
+    struct TokenInfo {
+        uint256 reserveBalance;
+        uint256 liquidity;
+        bool exists;
+    }
+
     address[] public tokenList;
     mapping(address => TokenInfo) public supportedTokens;
 
@@ -67,6 +65,14 @@ contract BondingCurve is OApp, ILayerZeroComposer, ReentrancyGuard {
         address _universalFactoryAddress
     ) Ownable(_delegate) OApp(_endpoint, _delegate) {
         universalFactoryAddress = _universalFactoryAddress;
+    }
+
+    function calculateBuyableAmount(address _tokenAddress, uint256 _ethAmount) public pure returns (uint256) {
+        return (_ethAmount * 1e18) / INITIAL_PRICE; // TODO: Make this variable
+    }
+
+    function calculateSellPayout(address _tokenAddress, uint256 _tokenAmount) public pure returns (uint256) {
+        return (_tokenAmount * INITIAL_PRICE) / 1e18; // TODO: Make this variable
     }
 
     function getTokenInfo(address _tokenAddress) external view returns (TokenInfo memory) {
@@ -154,12 +160,15 @@ contract BondingCurve is OApp, ILayerZeroComposer, ReentrancyGuard {
 
         IOFT oft = IOFT(_tokenAddress);
 
-         uint256 payout = calculateSellPayout(_tokenAddress, _tokenAmount);
+        uint256 payout = calculateSellPayout(_tokenAddress, _tokenAmount);
 
-        bytes memory extraOptions = OptionsBuilder.newOptions().addExecutorNativeDropOption(uint128(payout),  bytes32(uint256(uint160(_buyer))));
+        bytes memory extraOptions = OptionsBuilder.newOptions().addExecutorNativeDropOption(
+            uint128(payout),
+            bytes32(uint256(uint160(_buyer)))
+        );
         MessagingFee memory fee = _quote(_eid, bytes(""), extraOptions, false);
         require(payout >= fee.nativeFee, "Payout is insufficient to cover fees");
-       
+
         require(address(this).balance >= payout, "Insufficient contract ETH balance");
 
         tokenInfo.reserveBalance += _tokenAmount;
@@ -190,14 +199,6 @@ contract BondingCurve is OApp, ILayerZeroComposer, ReentrancyGuard {
         if (!success) revert TransferFailed(address(0), address(this), msg.sender, payout);
 
         emit TokenSold(msg.sender, _tokenAddress, _amount, payout);
-    }
-
-    function calculateBuyableAmount(address _tokenAddress, uint256 _ethAmount) public pure returns (uint256) {
-        return _ethAmount / INITIAL_PRICE; // TODO: Make this variable
-    }
-
-    function calculateSellPayout(address _tokenAddress, uint256 _tokenAmount) public pure returns (uint256) {
-        return _tokenAmount * INITIAL_PRICE; // TODO: Make this variable
     }
 
     function getTokenPrice(address _tokenAddress) public view returns (uint256) {
@@ -242,11 +243,11 @@ contract BondingCurve is OApp, ILayerZeroComposer, ReentrancyGuard {
     fallback() external payable {}
     receive() external payable {}
 
-        function _lzReceive(
+    function _lzReceive(
         Origin calldata _origin,
         bytes32 _guid,
         bytes calldata _payload,
         address _executor,
         bytes calldata _extraData
-    ) internal override { }
+    ) internal override {}
 }
