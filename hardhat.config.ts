@@ -1,8 +1,3 @@
-// Get the environment configuration from .env file
-//
-// To make use of automatic environment setup:
-// - Duplicate .env.example file and name it .env
-// - Fill in the environment variables
 import 'dotenv/config'
 
 import '@layerzerolabs/toolbox-hardhat'
@@ -24,6 +19,8 @@ const MNEMONIC = process.env.MNEMONIC
 const PRIVATE_KEY = process.env.PRIVATE_KEY
 
 const SCROLL_API_KEY = process.env.SCROLL_API_KEY
+
+const BASE_API_KEY = process.env.BASE_API_KEY
 
 const accounts: HttpNetworkAccountsUserConfig | undefined = MNEMONIC
     ? { mnemonic: MNEMONIC }
@@ -83,7 +80,7 @@ const config: HardhatUserConfig = {
     },
     etherscan: {
         apiKey: {
-            baseSepolia: 'TT7ZRT8QYDAZBGZFVMU786TCJIKFF2JJHM', 
+            baseSepolia: BASE_API_KEY || '', 
             arbitrumSepolia: 'mock', // not required by blockscout
             optimismSepolia: 'mock', // not required by blockscout
             scrollSepolia: SCROLL_API_KEY || '',

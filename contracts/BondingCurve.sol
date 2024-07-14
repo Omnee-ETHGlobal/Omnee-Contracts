@@ -111,12 +111,14 @@ contract BondingCurve is OApp, ILayerZeroComposer, ReentrancyGuard {
 
         IOFT oft = IOFT(_tokenAddress);
 
+        bytes memory extraOptions = OptionsBuilder.newOptions().addExecutorLzReceiveOption(200000, 0);
+
         SendParam memory quoteSendParam = SendParam({
             dstEid: _eid,
             to: MsgUtils.addressToBytes32(_buyer),
             amountLD: 1, // We don't know yet
             minAmountLD: 1, // We don't know yet
-            extraOptions: bytes(""),
+            extraOptions: extraOptions,
             composeMsg: bytes(""),
             oftCmd: bytes("")
         });

@@ -10,7 +10,7 @@ import "./librairies/MsgUtils.sol";
 
 contract OmneeOFT is OFT {
     uint32 public eid;
-    address public bondingCurve = 0x000000000000000000000000000000000000dEaD; 
+    address public bondingCurve;
 
     uint32 public BASE_EID = 40245;
     uint32[] public REMOTE_EIDS = [40231, 40170, 40232];
@@ -20,9 +20,12 @@ contract OmneeOFT is OFT {
         string memory _name,
         address _lzEndpoint,
         address _delegate,
-        uint32 _eid
+        uint32 _eid,
+        address _bondingCurve
     ) OFT(_name, _symbol, _lzEndpoint, _delegate) Ownable(_delegate) {
+        
         eid = _eid;
+        bondingCurve = _bondingCurve;
 
         for (uint256 i = 0; i < REMOTE_EIDS.length; i++) {
             if (REMOTE_EIDS[i] != eid) {
