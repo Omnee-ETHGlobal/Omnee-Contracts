@@ -4,11 +4,12 @@ pragma solidity ^0.8.22;
 import { OAppSender, OAppCore, MessagingFee, MessagingReceipt } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OAppSender.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IOFTFactory } from "./interfaces/IOFTFactory.sol";
+import { IBondingCurve } from "./interfaces/IBondingCurve.sol";
 
 contract UniversalFactory is OAppSender {
 
     struct TokenInfo {
-        address tokenAddr;
+        uint256 deployId;
         address deployer;
         string name;
         string symbol;
@@ -17,8 +18,9 @@ contract UniversalFactory is OAppSender {
 
     uint256 public currentDeployId = 1;
     address public baseFactory;
+    address public bondingCurve;
 
-    mapping(uint256 => TokenInfo) public tokenByDeployId;
+    mapping(address => TokenInfo) public tokenByAddress;
 
     event OFTCreated(address tokenAddress, string name, string symbol, uint32[] eids, uint256 deployId);
 
@@ -61,7 +63,9 @@ contract UniversalFactory is OAppSender {
 
         address oftAddr = IOFTFactory(baseFactory).deployOFTBase(_name, _symbol, currentDeployId, msg.sender);
 
-        tokenByDeployId[currentDeployId] = TokenInfo(oftAddr, msg.sender, _name, _symbol, _eids);
+        tokenByAddress[oftAddr] = TokenInfo(currentDeployId, msg.sender, _name, _symbol, _eids);
+
+        IBondingCurve(bondingCurve).addToken(oftAddr);
 
         currentDeployId++;
 
@@ -88,7 +92,7 @@ contract UniversalFactory is OAppSender {
         baseFactory = _baseFactory;
     }
 
-    function getTokensAddressByDeployId(uint256 _deployId) external view returns (address) {
-        return tokenByDeployId[_deployId].tokenAddr;
+    function setBondingCurve(address _bondingCurve) external onlyOwner {
+        bondingCurve = _bondingCurve;
     }
 }
