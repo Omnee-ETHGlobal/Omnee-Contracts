@@ -2,12 +2,13 @@ import dotenv from 'dotenv';
 dotenv.config();
 import { ethers } from "hardhat";
 
-const owner = "";
+const owner = "0x2b9C7122D6729B7CaE99234d3348D83186b1FCd3";
 
 const endpointV2_BASE = "0x6EDCE65403992e310A62460808c4b910D972f10f";
 const endpointV2_SCROLL = "0x6EDCE65403992e310A62460808c4b910D972f10f";
 const endpointV2_ARB = "0x6EDCE65403992e310A62460808c4b910D972f10f";
 const endpointV2_OP = "0x6EDCE65403992e310A62460808c4b910D972f10f";
+const endpointV2_ZIRCUIT = "0x6EDCE65403992e310A62460808c4b910D972f10f";
 
 const EID_BASE = "40245";
 const EID_SCROLL = "40170";
@@ -23,7 +24,7 @@ const main = async () => {
    console.log("UniversalFactory deployed to:", universalFactory.address);
 
    const OFTFactory = await ethers.getContractFactory("OFTFactory");
-   const oftFactory = await OFTFactory.deploy(endpointV2_BASE, owner, EID_OP, ethers.utils.zeroPad(universalFactory.address, 32));
+   const oftFactory = await OFTFactory.deploy(endpointV2_BASE, owner, EID_SCROLL, ethers.utils.zeroPad(universalFactory.address, 32));
 
    console.log("OFTFactory deployed to:", oftFactory.address);
 
@@ -35,7 +36,7 @@ const main = async () => {
 
 
   const Router = await ethers.getContractFactory("OmneeRouter");
-  const router = await Router.deploy(endpointV2_BASE, owner, EID_OP);
+  const router = await Router.deploy(endpointV2_BASE, owner, EID_SCROLL);
 
   console.log("Router deployed to:", router.address);
 

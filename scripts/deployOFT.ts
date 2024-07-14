@@ -23,19 +23,19 @@ const main = async () => {
   const walletOP = new ethers.Wallet(process.env.PRIVATE_KEY as string, opProvider);
   const walletZIRCUIT = new ethers.Wallet(process.env.PRIVATE_KEY as string, zircuitProvider);
 
-  const universalFactorySC = new ethers.Contract("", universalFactoryABI, walletBASE);
-  const bondingCurveBASE = new ethers.Contract("", bondingCurveABI, walletBASE);
+  const universalFactorySC = new ethers.Contract("0xf46ac01917B5CbE6125aF8EA2aC9E85de0e365aA", universalFactoryABI, walletBASE);
+  const bondingCurveBASE = new ethers.Contract("0x7b7e9603b68ca1c0C975eD4594dF1Da29e603b6e", bondingCurveABI, walletBASE);
 
-  const oftFactorySCROLL = new ethers.Contract("", oftFactoryABI, walletSCROLL);
-  const oftFactoryARB = new ethers.Contract("", oftFactoryABI, walletARB);
-  const oftFactoryOP = new ethers.Contract("", oftFactoryABI, walletOP);
-  const oftFactoryBASE = new ethers.Contract("", oftFactoryABI, walletBASE);
-  const oftFactoryZIRCUIT = new ethers.Contract("", oftFactoryABI, walletZIRCUIT);
+  const oftFactorySCROLL = new ethers.Contract("0xe62f0C6Eb658a56ebdf3D2A700d204A5473e0252", oftFactoryABI, walletSCROLL);
+  const oftFactoryARB = new ethers.Contract("0xe62f0C6Eb658a56ebdf3D2A700d204A5473e0252", oftFactoryABI, walletARB);
+  const oftFactoryOP = new ethers.Contract("0xe62f0C6Eb658a56ebdf3D2A700d204A5473e0252", oftFactoryABI, walletOP);
+  const oftFactoryBASE = new ethers.Contract("0xe62f0C6Eb658a56ebdf3D2A700d204A5473e0252", oftFactoryABI, walletBASE);
+  const oftFactoryZIRCUIT = new ethers.Contract("0xe62f0C6Eb658a56ebdf3D2A700d204A5473e0252", oftFactoryABI, walletZIRCUIT);
 
-  const routerARB = new ethers.Contract("", omneeRouterABI, walletARB);
-  const routerOP = new ethers.Contract("", omneeRouterABI, walletOP);
-  const routerScroll = new ethers.Contract("", omneeRouterABI, walletSCROLL);
-  const routerZircuit = new ethers.Contract("", omneeRouterABI, walletZIRCUIT);
+  const routerARB = new ethers.Contract("0x17c8C3f095E3b51EB5867972E5a3bC9630a8d48D", omneeRouterABI, walletARB);
+  const routerOP = new ethers.Contract("0x17c8C3f095E3b51EB5867972E5a3bC9630a8d48D", omneeRouterABI, walletOP);
+  const routerScroll = new ethers.Contract("0x17c8C3f095E3b51EB5867972E5a3bC9630a8d48D", omneeRouterABI, walletSCROLL);
+  const routerZircuit = new ethers.Contract("0x17c8C3f095E3b51EB5867972E5a3bC9630a8d48D", omneeRouterABI, walletZIRCUIT);
 
   const EID_BASE = "40245";
   const EID_SCROLL = "40170";
@@ -43,10 +43,22 @@ const main = async () => {
   const EID_OP = "40232";
   const EID_ZIRCUIT = "40275";
 
-  let txx = await universalFactorySC.setBaseFactory(oftFactoryBASE.address);
-  await txx.wait();
+    
+  const options = Options.newOptions().addExecutorLzReceiveOption(500000000, 0).toHex().toString();
+    
+  console.log("Options =>", options);
+    
+  const nativeFee = await universalFactorySC.quoteDeployOFT("WIF", "WIF", [EID_ARB, EID_OP, EID_SCROLL, EID_ZIRCUIT], options);
+    
+  console.log("Deployment Fee =>", ethers.utils.formatEther(nativeFee.toString()), "ETH");
+    
+  let tx = await universalFactorySC.deployOFT("WIF", "WIF", [EID_ARB, EID_OP, EID_SCROLL, EID_ZIRCUIT], options, { value: nativeFee });
+    
+  console.log("Transaction Hash =>", tx.hash);
 
-  txx = await universalFactorySC.setBaseFactory(oftFactoryBASE.address);
+  /*
+
+  let txx = await universalFactorySC.setBaseFactory(oftFactoryBASE.address);
   await txx.wait();
 
   txx = await universalFactorySC.setBondingCurve(bondingCurveBASE.address);
@@ -134,7 +146,7 @@ const main = async () => {
   console.log("Router Peers set");
 
 
-  /*
+
   
   
   const options = Options.newOptions().addExecutorLzReceiveOption(500000, "10000000000000000").toHex().toString();
@@ -145,18 +157,7 @@ const main = async () => {
 
 
   ------
-  
-  const options = Options.newOptions().addExecutorLzReceiveOption(5000000, 0).toHex().toString();
-    
-  console.log("Options =>", options);
-    
-  const nativeFee = await universalFactorySC.quoteDeployOFT("MEOW", "MEOW", [EID_ARB, EID_OP, EID_SCROLL], options);
-    
-  console.log("Deployment Fee =>", ethers.utils.formatEther(nativeFee.toString()), "ETH");
-    
-  let tx = await universalFactorySC.deployOFT("MEOW", "MEOW", [EID_ARB, EID_OP, EID_SCROLL], options, { value: nativeFee });
-    
-  console.log("Transaction Hash =>", tx.hash);
+
 
   */
 
