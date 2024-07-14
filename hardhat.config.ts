@@ -24,6 +24,7 @@ const MNEMONIC = process.env.MNEMONIC
 const PRIVATE_KEY = process.env.PRIVATE_KEY
 
 const SCROLL_API_KEY = process.env.SCROLL_API_KEY
+const ZIRCUIT_API_KEY = process.env.ZIRCUIT_API_KEY
 
 const accounts: HttpNetworkAccountsUserConfig | undefined = MNEMONIC
     ? { mnemonic: MNEMONIC }
@@ -75,18 +76,19 @@ const config: HardhatUserConfig = {
             url: 'https://sepolia.optimism.io',
             accounts,
         },
-        zircuitTestnet : {
-            eid : EndpointId.ZIRCUIT_V2_TESTNET,
-            url : 'https://zircuit1.p2pify.com/',
+        zircuitTestnet: {
+            eid: EndpointId.ZIRCUIT_V2_TESTNET,
+            url: 'https://zircuit1.p2pify.com/',
             accounts,
-        }
+        },
     },
     etherscan: {
         apiKey: {
-            baseSepolia: 'TT7ZRT8QYDAZBGZFVMU786TCJIKFF2JJHM', 
+            baseSepolia: 'TT7ZRT8QYDAZBGZFVMU786TCJIKFF2JJHM',
             arbitrumSepolia: 'mock', // not required by blockscout
             optimismSepolia: 'mock', // not required by blockscout
             scrollSepolia: SCROLL_API_KEY || '',
+            zircuitTestnet: ZIRCUIT_API_KEY || '',
         },
         customChains: [
             {
@@ -119,6 +121,14 @@ const config: HardhatUserConfig = {
                 urls: {
                     apiURL: 'https://api-sepolia.scrollscan.com/api',
                     browserURL: 'https://sepolia.scrollscan.com/',
+                },
+            },
+            {
+                network: 'zircuit',
+                chainId: 48899,
+                urls: {
+                    apiURL: 'https://explorer.zircuit.com/api/contractVerifyHardhat',
+                    browserURL: 'https://explorer.zircuit.com',
                 },
             },
         ],
