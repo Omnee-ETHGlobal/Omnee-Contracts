@@ -13,10 +13,15 @@ import { OptionsBuilder } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/lib
 
 import "./librairies/MsgUtils.sol";
 
+/**
+ * @title BondingCurve
+ * @dev Implements a bonding curve for token trading and cross-chain interactions using LayerZero
+ */
 contract BondingCurve is OApp, ILayerZeroComposer, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using OptionsBuilder for bytes;
 
+    // Events
     event TokenAdded(address indexed tokenAddress);
     event TokenBought(address indexed buyer, address indexed tokenAddress, uint256 amount);
     event TokenSold(address indexed seller, address indexed tokenAddress, uint256 amount, uint256 payout);
@@ -36,6 +41,7 @@ contract BondingCurve is OApp, ILayerZeroComposer, ReentrancyGuard {
         uint256 tokenAmount
     );
 
+    // Custom errors
     error TokenNotSupported(address tokenAddress);
     error InsufficientBalance(address tokenAddress);
     error InsufficientUserBalance(address tokenAddress);
@@ -44,6 +50,7 @@ contract BondingCurve is OApp, ILayerZeroComposer, ReentrancyGuard {
     error TransferFailed(address token, address from, address to, uint256 amount);
     error InvalidMessageType(uint8 messageType);
 
+    // State variables
     address public universalFactoryAddress;
 
     struct TokenInfo {
@@ -55,10 +62,17 @@ contract BondingCurve is OApp, ILayerZeroComposer, ReentrancyGuard {
     address[] public tokenList;
     mapping(address => TokenInfo) public supportedTokens;
 
+    // Constants
     uint256 public constant INITIAL_SUPPLY = 100_000_000 * 1e18;
     // uint256 public constant SLOPE = 0.001 * 1e18;
     uint256 public constant INITIAL_PRICE = 0.000000001 * 1e18;
 
+    /**
+     * @dev Constructor to initialize the contract
+     * @param _endpoint The LayerZero endpoint address
+     * @param _delegate The delegate address for ownership
+     * @param _universalFactoryAddress The address of the universal factory
+     */
     constructor(
         address _endpoint,
         address _delegate,
@@ -67,18 +81,39 @@ contract BondingCurve is OApp, ILayerZeroComposer, ReentrancyGuard {
         universalFactoryAddress = _universalFactoryAddress;
     }
 
+    /**
+     * @dev Calculates the amount of tokens that can be bought with a given amount of ETH
+     * @param _tokenAddress The address of the token
+     * @param _ethAmount The amount of ETH to spend
+     * @return The amount of tokens that can be bought
+     */
     function calculateBuyableAmount(address _tokenAddress, uint256 _ethAmount) public pure returns (uint256) {
         return (_ethAmount * 1e18) / INITIAL_PRICE; // TODO: Make this variable
     }
 
+    /**
+     * @dev Calculates the ETH payout for selling a given amount of tokens
+     * @param _tokenAddress The address of the token
+     * @param _tokenAmount The amount of tokens to sell
+     * @return The ETH payout
+     */
     function calculateSellPayout(address _tokenAddress, uint256 _tokenAmount) public pure returns (uint256) {
         return (_tokenAmount * INITIAL_PRICE) / 1e18; // TODO: Make this variable
     }
 
+    /**
+     * @dev Retrieves the token information for a given token address
+     * @param _tokenAddress The address of the token
+     * @return The TokenInfo struct containing token details
+     */
     function getTokenInfo(address _tokenAddress) external view returns (TokenInfo memory) {
         return supportedTokens[_tokenAddress];
     }
 
+    /**
+     * @dev Adds a new token to the supported tokens list
+     * @param _tokenAddress The address of the token to add
+     */
     function addToken(address _tokenAddress) external {
         require(msg.sender == universalFactoryAddress, "Unauthorized");
         require(_tokenAddress != address(0), "Invalid token address");
@@ -95,6 +130,10 @@ contract BondingCurve is OApp, ILayerZeroComposer, ReentrancyGuard {
         emit TokenAdded(_tokenAddress);
     }
 
+    /**
+     * @dev Allows users to buy tokens with ETH on Base
+     * @param _tokenAddress The address of the token to buy
+     */
     function buyTokens(address _tokenAddress) external payable nonReentrant {
         TokenInfo storage tokenInfo = supportedTokens[_tokenAddress];
         if (!tokenInfo.exists) revert TokenNotSupported(_tokenAddress);
@@ -111,6 +150,13 @@ contract BondingCurve is OApp, ILayerZeroComposer, ReentrancyGuard {
         emit TokenBought(msg.sender, _tokenAddress, buyableAmount);
     }
 
+    /**
+     * @dev Internal function to handle remote token buying
+     * @param _tokenAddress The address of the token to buy
+     * @param _buyer The address of the buyer
+     * @param _ethAmount The amount of ETH to spend
+     * @param _eid The endpoint ID for LayerZero
+     */
     function _buyTokensRemote(address _tokenAddress, address _buyer, uint256 _ethAmount, uint32 _eid) private {
         TokenInfo storage tokenInfo = supportedTokens[_tokenAddress];
         if (!tokenInfo.exists) revert TokenNotSupported(_tokenAddress);
@@ -152,6 +198,13 @@ contract BondingCurve is OApp, ILayerZeroComposer, ReentrancyGuard {
         emit TokenBought(_buyer, _tokenAddress, buyableAmount);
     }
 
+    /**
+     * @dev Internal function to handle remote token selling
+     * @param _tokenAddress The address of the token to sell
+     * @param _buyer The address of the buyer
+     * @param _tokenAmount The amount of tokens to sell
+     * @param _eid The endpoint ID for LayerZero
+     */
     function _sellTokensRemote(address _tokenAddress, address _buyer, uint256 _tokenAmount, uint32 _eid) private {
         if (_tokenAmount == 0) revert InvalidAmount(_tokenAmount);
         TokenInfo storage tokenInfo = supportedTokens[_tokenAddress];
@@ -178,6 +231,11 @@ contract BondingCurve is OApp, ILayerZeroComposer, ReentrancyGuard {
         emit TokenSold(_buyer, _tokenAddress, _tokenAmount, payout);
     }
 
+    /**
+     * @dev Allows users to sell tokens for ETH on Base
+     * @param _tokenAddress The address of the token to sell
+     * @param _amount The amount of tokens to sell
+     */
     function sellTokens(address _tokenAddress, uint256 _amount) external nonReentrant {
         if (_amount == 0) revert InvalidAmount(_amount);
         TokenInfo storage tokenInfo = supportedTokens[_tokenAddress];
@@ -200,6 +258,11 @@ contract BondingCurve is OApp, ILayerZeroComposer, ReentrancyGuard {
         emit TokenSold(msg.sender, _tokenAddress, _amount, payout);
     }
 
+    /**
+     * @dev Retrieves the current price of a token
+     * @param _tokenAddress The address of the token
+     * @return The current price of the token
+     */
     function getTokenPrice(address _tokenAddress) public view returns (uint256) {
         TokenInfo memory tokenInfo = supportedTokens[_tokenAddress];
         if (!tokenInfo.exists) revert TokenNotSupported(_tokenAddress);
@@ -207,6 +270,14 @@ contract BondingCurve is OApp, ILayerZeroComposer, ReentrancyGuard {
         return INITIAL_PRICE; // TODO: Make this variable
     }
 
+    /**
+     * @dev Handles incoming LayerZero messages
+     * @param _origin The origin information of the message
+     * @param _guid The globally unique identifier of the message
+     * @param _message The message payload
+     * @param _executor The address of the executor
+     * @param _extraData Any extra data included with the message
+     */
     function lzReceive(
         Origin calldata _origin,
         bytes32 _guid,
@@ -224,7 +295,21 @@ contract BondingCurve is OApp, ILayerZeroComposer, ReentrancyGuard {
         emit LzReceiveLog(msgType, tokenAddress, sender, eid, tokenAmount);
     }
 
-    function lzCompose(address, bytes32, bytes calldata _message, address, bytes calldata) external payable override {
+    /**
+     * @dev Handles LayerZero composed messages
+     * @param _sender The address of the sender
+     * @param _guid The globally unique identifier of the message
+     * @param _message The message payload
+     * @param _executor The address of the executor
+     * @param _extraData Any extra data included with the message
+     */
+    function lzCompose(
+        address _sender,
+        bytes32 _guid,
+        bytes calldata _message,
+        address _executor,
+        bytes calldata _extraData
+    ) external payable override {
         (uint8 msgType, address tokenAddress, address sender, uint32 eid, uint256 tokenAmount) = abi.decode(
             _message,
             (uint8, address, address, uint32, uint256)
@@ -239,7 +324,14 @@ contract BondingCurve is OApp, ILayerZeroComposer, ReentrancyGuard {
         // }
     }
 
+    /**
+     * @dev Fallback function to receive ETH
+     */
     fallback() external payable {}
+
+    /**
+     * @dev Receive function to receive ETH
+     */
     receive() external payable {}
 
     function _lzReceive(
