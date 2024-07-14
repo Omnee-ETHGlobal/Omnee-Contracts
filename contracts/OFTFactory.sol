@@ -11,7 +11,11 @@ contract OFTFactory is OAppReceiver {
     bytes32 public universalFactory;
     string public salt = "OMNEE_OFT";
 
+    uint32 public baseEID = 40245;
+
     mapping(uint256 => address) public deployIdToAddress;
+
+    address public bondingCurve; /// Passed to the OFT for initial mint
 
     event OFTCreated(address indexed sender, string indexed name, string symbol, uint32 eid, uint256 deployId);
 
@@ -44,7 +48,7 @@ contract OFTFactory is OAppReceiver {
 
         address oftAddr = Create3.create3(
             _salt,
-            abi.encodePacked(bytecode, abi.encode(_symbol, _name, endpoint, _deployer, _eid))
+            abi.encodePacked(bytecode, abi.encode(_symbol, _name, endpoint, _deployer, _eid, bondingCurve))
         );
 
         deployIdToAddress[_deployId] = oftAddr;
@@ -60,18 +64,20 @@ contract OFTFactory is OAppReceiver {
     ) external returns (address) {
         require(bytes32(uint256(uint160(msg.sender))) == universalFactory, "OFTFactory: FORBIDDEN");
 
-        uint32 baseEID = 40245;
-
         bytes memory bytecode = type(OmneeOFT).creationCode;
         bytes32 _salt = keccak256(abi.encodePacked(salt, _deployId));
 
         address oftAddr = Create3.create3(
             _salt,
-            abi.encodePacked(bytecode, abi.encode(_symbol, _name, endpoint, admin, baseEID))
+            abi.encodePacked(bytecode, abi.encode(_symbol, _name, endpoint, admin, baseEID, bondingCurve))
         );
 
         emit OFTCreated(oftAddr, _name, _symbol, baseEID, _deployId);
 
         return oftAddr;
+    }
+
+    function setBondingCurve(address _bondingCurve) public onlyOwner {
+        bondingCurve = _bondingCurve;
     }
 }

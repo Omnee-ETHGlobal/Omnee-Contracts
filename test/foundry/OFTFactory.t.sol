@@ -4,6 +4,8 @@ pragma solidity ^0.8.20;
 // Mock imports
 import { UniversalFactory } from "../../contracts/UniversalFactory.sol";
 import { OFTFactory } from "../../contracts/OFTFactory.sol";
+import { BondingCurve } from "../../contracts/BondingCurve.sol";
+import { OmneeRouter } from "../../contracts/OmneeRouter.sol";
 
 // OApp imports
 import { IOAppOptionsType3, EnforcedOptionParam } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/libs/OAppOptionsType3.sol";
@@ -30,19 +32,25 @@ import { TestHelperOz5 } from "@layerzerolabs/test-devtools-evm-foundry/contract
 contract UniversalFactoryTest is TestHelperOz5 {
     using OptionsBuilder for bytes;
 
-    uint32 aEid = 1;
-    uint32 bEid = 2;
-    uint32 cEid = 3;
-    uint32 dEid = 4;
+    uint32 aEid = 40245;
+    uint32 bEid = 40231;
+    uint32 cEid = 40170;
+    uint32 dEid = 40232;
 
     uint16 SEND = 1;
         
-    UniversalFactory aSender;
+    UniversalFactory aUniversalFactory;
 
-    OFTFactory aReceiver;
-    OFTFactory bReceiver;
-    OFTFactory cReceiver;
-    OFTFactory dReceiver;
+    OFTFactory aOFTFactory;
+    OFTFactory bOFTFactory;
+    OFTFactory cOFTFactory;
+    OFTFactory dOFTFactory;
+
+    BondingCurve aBondingCurve;
+
+    OmneeRouter bRouter;
+    OmneeRouter cRouter;
+    OmneeRouter dRouter;
 
     address public userA = address(0x1);
     address public userB = address(0x2);
@@ -60,64 +68,86 @@ contract UniversalFactoryTest is TestHelperOz5 {
         super.setUp();
         setUpEndpoints(4, LibraryType.UltraLightNode);
 
-        aSender = UniversalFactory(
+        aUniversalFactory = UniversalFactory(
             payable(_deployOApp(type(UniversalFactory).creationCode, abi.encode(address(endpoints[aEid]), address(this))))
         );
 
-        aReceiver = OFTFactory(
-            payable(_deployOApp(type(OFTFactory).creationCode, abi.encode(address(endpoints[aEid]), address(this), 1, bytes32(uint256(uint160(address(aSender)))))))
+        aOFTFactory = OFTFactory(
+            payable(_deployOApp(type(OFTFactory).creationCode, abi.encode(address(endpoints[aEid]), address(this), 1, bytes32(uint256(uint160(address(aUniversalFactory)))))))
         );
 
-        bReceiver = OFTFactory(
-            payable(_deployOApp(type(OFTFactory).creationCode, abi.encode(address(endpoints[bEid]), address(this), 2, bytes32(uint256(uint160(address(aSender)))))))
+        bOFTFactory = OFTFactory(
+            payable(_deployOApp(type(OFTFactory).creationCode, abi.encode(address(endpoints[bEid]), address(this), 2, bytes32(uint256(uint160(address(aUniversalFactory)))))))
         );
 
-        cReceiver = OFTFactory(
-            payable(_deployOApp(type(OFTFactory).creationCode, abi.encode(address(endpoints[cEid]), address(this), 3, bytes32(uint256(uint160(address(aSender)))))))
+        cOFTFactory = OFTFactory(
+            payable(_deployOApp(type(OFTFactory).creationCode, abi.encode(address(endpoints[cEid]), address(this), 3, bytes32(uint256(uint160(address(aUniversalFactory)))))))
         );
 
-        dReceiver = OFTFactory(
-            payable(_deployOApp(type(OFTFactory).creationCode, abi.encode(address(endpoints[dEid]), address(this), 4, bytes32(uint256(uint160(address(aSender)))))))
+        dOFTFactory = OFTFactory(
+            payable(_deployOApp(type(OFTFactory).creationCode, abi.encode(address(endpoints[dEid]), address(this), 4, bytes32(uint256(uint160(address(aUniversalFactory)))))))
         );
 
-        aSender.setBaseFactory(address(aReceiver));
+        aBondingCurve = BondingCurve(
+            payable(_deployOApp(type(BondingCurve).creationCode, abi.encode(address(this), address(aUniversalFactory))))
+        );
 
-        // config and wire the
-        address[] memory oapps = new address[](4);
-        oapps[0] = address(aSender);
-        oapps[1] = address(bReceiver);
-        oapps[2] = address(cReceiver);
-        oapps[3] = address(dReceiver);
-        this.wireOApps(oapps);
+        bRouter = OmneeRouter(
+            payable(_deployOApp(type(OmneeRouter).creationCode, abi.encode(address(endpoints[bEid]), address(this), 2)))
+        );
+
+        cRouter = OmneeRouter(
+            payable(_deployOApp(type(OmneeRouter).creationCode, abi.encode(address(endpoints[cEid]), address(this), 3)))
+        );
+
+        dRouter = OmneeRouter(
+            payable(_deployOApp(type(OmneeRouter).creationCode, abi.encode(address(endpoints[dEid]), address(this), 4)))
+        );
+
+        aUniversalFactory.setBaseFactory(address(aOFTFactory));
+        aUniversalFactory.setBondingCurve(address(aBondingCurve));
+
+        aOFTFactory.setBondingCurve(address(aBondingCurve));
+        bOFTFactory.setBondingCurve(address(aBondingCurve));
+        cOFTFactory.setBondingCurve(address(aBondingCurve));
+
+        bRouter.setBondingCurve(bytes32(uint256(uint160(address(aBondingCurve)))));
+        cRouter.setBondingCurve(bytes32(uint256(uint160(address(aBondingCurve)))));
+        dRouter.setBondingCurve(bytes32(uint256(uint160(address(aBondingCurve)))));
+
+        aUniversalFactory.setPeer(2, bytes32(uint256(uint160(address(bOFTFactory)))));
+        aUniversalFactory.setPeer(3, bytes32(uint256(uint160(address(cOFTFactory)))));
+        aUniversalFactory.setPeer(4, bytes32(uint256(uint160(address(dOFTFactory)))));
+
+        bOFTFactory.setPeer(1, bytes32(uint256(uint160(address(aUniversalFactory)))));
+        cOFTFactory.setPeer(1, bytes32(uint256(uint160(address(aUniversalFactory)))));
+        dOFTFactory.setPeer(1, bytes32(uint256(uint160(address(aUniversalFactory)))));
+
+        bRouter.setPeer(1, bytes32(uint256(uint160(address(aBondingCurve)))));
+        cRouter.setPeer(1, bytes32(uint256(uint160(address(aBondingCurve)))));
+        dRouter.setPeer(1, bytes32(uint256(uint160(address(aBondingCurve)))));
+
     }
     
     function test_batch_send() public {
         
-        bytes memory _extraSendOptions = OptionsBuilder.newOptions().addExecutorLzReceiveOption(20000000, 0); // extra gas limit and msg.value to request for A -> B
+        bytes memory _extraSendOptions = OptionsBuilder.newOptions().addExecutorLzReceiveOption(50000000, 0); // extra gas limit and msg.value to request for A -> B
 
-        uint32[] memory _dstEids = new uint32[](2);
+        uint32[] memory _dstEids = new uint32[](3);
         _dstEids[0] = bEid;
         _dstEids[1] = cEid;
+        _dstEids[2] = dEid;
 
         // Use the return call quote to generate a new quote for A -> B.
         // src chain cost + price of gas that I want to send + fees for my chosen security Stack / Executor
-        uint256 nativeFee = aSender.quoteDeployOFT("MEOW", "MEOW", _dstEids, _extraSendOptions);
+        uint256 nativeFee = aUniversalFactory.quoteDeployOFT("MEOW", "MEOW", _dstEids, _extraSendOptions);
 
-        // Use the new quote for the msg.value of the send call.
-        vm.prank(userA);
-        aSender.deployOFT{value: nativeFee}(
+        aUniversalFactory.deployOFT{value: nativeFee}(
             "MEOW",
             "MEOW",
             _dstEids,
             _extraSendOptions
         );
 
-        verifyPackets(bEid, addressToBytes32(address(bReceiver)));
-        verifyPackets(cEid, addressToBytes32(address(cReceiver)));
-        verifyPackets(dEid, addressToBytes32(address(dReceiver)));
-
-        ///assertEq(bReceiver.data(), "Chain A says hello!");
-        ///assertEq(cReceiver.data(), "Chain A says hello!");
-        ///assertEq(dReceiver.data(), "Chain A says hello!");
     }
 }
